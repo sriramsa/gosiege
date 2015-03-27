@@ -1,7 +1,7 @@
 // Maintains and manages distributed state
 package state
 
-import "github.com/sriramsa/gosiege/config"
+import "github.com/loadcloud/gosiege/config"
 
 func InitGoSiegeState() (err error) {
 	// Read configuration

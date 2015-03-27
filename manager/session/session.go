@@ -5,11 +5,36 @@ import (
 	"os/exec"
 	"time"
 
-	"github.com/sriramsa/gosiege/logger"
-	"github.com/sriramsa/gosiege/session"
+	"github.com/loadcloud/gosiege/logger"
+	"github.com/loadcloud/gosiege/session"
 )
 
 var Log = logger.NewLogger("SessionManager")
+
+type SiegeSession struct {
+	Guid string
+	Pid  int
+	Done chan int
+}
+
+// Creates a new SiegeSession Struct and returns a pointer to it
+func CreateSiegeSession() *SiegeSession {
+	Log.Print("Session created...")
+	return &SiegeSession{
+		Pid:  10,
+		Done: make(chan int, 1),
+	}
+}
+
+func (session SiegeSession) Start() int {
+	Log.Print("Started")
+	return -1
+}
+
+func (session SiegeSession) Stop() int {
+	Log.Print("Stopped")
+	return -1
+}
 
 func runSiege(completed chan int) (retOutput string) {
 

@@ -7,7 +7,7 @@ package cluster
 import (
 	"time"
 
-	"github.com/sriramsa/gosiege/logger"
+	"github.com/loadcloud/gosiege/logger"
 )
 
 // StartClusterManager starts the siege cluster manager

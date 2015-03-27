@@ -1,7 +1,7 @@
 // Package config provides configuration needed for initializing the cluster
 package config
 
-import "github.com/sriramsa/gosiege/logger"
+import "github.com/loadcloud/gosiege/logger"
 
 var log = logger.NewLogger("Config")
 

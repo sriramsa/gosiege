@@ -15,10 +15,10 @@ This process keeps running that
 package main
 
 import (
-	"github.com/sriramsa/gosiege/config"
-	"github.com/sriramsa/gosiege/logger"
-	"github.com/sriramsa/gosiege/manager/cluster"
-	"github.com/sriramsa/gosiege/state"
+	"github.com/loadcloud/gosiege/config"
+	"github.com/loadcloud/gosiege/logger"
+	"github.com/loadcloud/gosiege/manager/cluster"
+	"github.com/loadcloud/gosiege/state"
 )
 
 // For graceful shutdown of the service. When this is closed, all goroutines exit.
