@@ -1,4 +1,4 @@
-*(not ready for public consumption yet. please move on..)*
+*(Under development, not ready for public consumption yet. please move on..)*
 
 GoSiege
 =======
