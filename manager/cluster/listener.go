@@ -8,37 +8,40 @@ import (
 	"net/http"
 )
 
+// Channel to write the commands to
 var writeCh chan Command
 
 // Starts a http listener and reports incoming messages to the caller
-func StartGoSiegeHttpListener(writeCh chan Command, doneCh chan struct{}) {
+func StartHttpCommandListener(w chan Command, d chan struct{}) {
 	defer func() {
 		if err := recover(); err != nil {
 			log.Println("Listener failed", err)
 		}
 	}()
 
-	writeCh = writeCh
+	writeCh = w
 	http.HandleFunc("/", handler)
 	http.ListenAndServe(":8080", nil)
 }
 
+// http handler
 func handler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Hi there, I love %s!", r.URL.Path[1:])
-	fmt.Println("hit")
+	fmt.Println("hit by %s", r.URL.Path[1:])
 
 	query_params := r.URL.Query()
 	concurrent, _ := query_params["concurrent"]
 	delay, _ := query_params["delay"]
 	host, _ := query_params["target"]
 
-	cmd := CreateNewSession{
+	// Create a new Siege Session from the request
+	cmd := NewSiegeSession{
 		concurrent: concurrent[0],
 		delay:      delay[0],
 		host:       host[0],
 	}
 
-	// Write the command into the channel
+	// Send command to cluster manager
 	writeCh <- Command{
 		cmd: cmd,
 	}

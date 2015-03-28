@@ -6,39 +6,68 @@ import (
 	"time"
 
 	"github.com/loadcloud/gosiege/logger"
-	"github.com/loadcloud/gosiege/session"
 )
 
 var Log = logger.NewLogger("SessionManager")
 
+type sessionState int
+
+const (
+	Ready sessionState = iota
+	Running
+	Stopping
+	Stopped
+	Aborted
+	Error
+)
+
+// SiegeSession struct
 type SiegeSession struct {
 	Guid string
 	Pid  int
 	Done chan int
+
+	state sessionState
+}
+
+func (s SiegeSession) GetState() sessionState {
+	return s.state
+}
+
+func (s SiegeSession) SetState(st sessionState) error {
+
+	s.state = st
+
+	return nil
 }
 
 // Creates a new SiegeSession Struct and returns a pointer to it
-func CreateSiegeSession() *SiegeSession {
+func NewSession() *SiegeSession {
+
 	Log.Print("Session created...")
-	return &SiegeSession{
+	s := SiegeSession{
 		Pid:  10,
 		Done: make(chan int, 1),
 	}
+
+	Log.Println("Session State = ", s.GetState())
+
+	return &s
 }
 
-func (session SiegeSession) Start() int {
+func (s SiegeSession) Start() int {
 	Log.Print("Started")
 	return -1
 }
 
-func (session SiegeSession) Stop() int {
+func (s SiegeSession) Stop() int {
 	Log.Print("Stopped")
 	return -1
 }
 
 func runSiege(completed chan int) (retOutput string) {
 
-	siegeSession := session.CreateSiegeSession()
+	siegeSession := NewSession()
 	_ = siegeSession.Start()
 
 	defer func() {

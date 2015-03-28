@@ -44,7 +44,7 @@ func main() {
 	// the corresponding component of the change
 	_ = state.InitGoSiegeState()
 
-	// Start the cluster manager go routine
+	// Start the cluster manager go routine. Give it the DoneCh for exit signals
 	go cluster.StartClusterManager(DoneCh)
 
 	// admin channel is used to listen to incoming messages from
