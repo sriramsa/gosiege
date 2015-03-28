@@ -1,18 +1,20 @@
 // Package main provides listener that listens to the http port for incoming
 // messages from Admin NodeJS UI or Command Line
-package cluster
+package listener
 
 import (
 	"fmt"
 	"log"
 	"net/http"
+
+	"github.com/loadcloud/gosiege/manager/cluster"
 )
 
 // Channel to write the commands to
-var writeCh chan Command
+var writeCh chan cluster.SiegeCommand
 
 // Starts a http listener and reports incoming messages to the caller
-func StartHttpCommandListener(w chan Command, d chan struct{}) {
+func StartHttpCommandListener(w chan SiegeCommand, d chan struct{}) {
 	defer func() {
 		if err := recover(); err != nil {
 			log.Println("Listener failed", err)
@@ -42,7 +44,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Send command to cluster manager
-	writeCh <- Command{
+	writeCh <- SiegeCommand{
 		cmd: cmd,
 	}
 

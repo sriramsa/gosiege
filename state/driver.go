@@ -1,14 +1,9 @@
 // Maintains and manages distributed state
 package state
 
-import "github.com/loadcloud/gosiege/config"
-
 func InitGoSiegeState() (err error) {
-	// Read configuration
-	_ = config.LoadConfig()
 
 	return nil
-	// load plugins
 }
 
 func ReadValue(key string) (value []byte, err error) {
@@ -19,4 +14,13 @@ func ReadValue(key string) (value []byte, err error) {
 
 func WriteValue(key string, value []byte) (err error) {
 	return nil
+}
+
+// Components subscribe to state using this API
+// Returns a channel for the caller to listen to
+func SubscribeToTopic(t string) (listen chan struct{}) {
+
+	listen = make(chan struct{})
+
+	return
 }

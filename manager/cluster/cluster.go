@@ -16,7 +16,7 @@ var Log = logger.NewLogger("ClusterMgr")
 
 // StartClusterManager starts the siege cluster manager. Takes a
 // channel for listening to abort signals
-func StartClusterManager(d chan struct{}) {
+func StartClusterManager(l, chan SiegeComman, d chan struct{}) {
 
 	// If there is a panic recover using this function
 	defer func() {
@@ -27,19 +27,13 @@ func StartClusterManager(d chan struct{}) {
 
 	Log.Println("StartingClusterManager")
 
-	listenChannel := make(chan Command)
-
-	// Start the http listener and pass in a channel
-	// for it to report the commands in
-	go StartHttpCommandListener(listenChannel, d)
-
-	listenToIncomingCommands(listenChannel, d)
+	listenToIncomingCommands(l, d)
 }
 
 // listens to incoming commands on the channel
-func listenToIncomingCommands(l chan Command, d chan struct{}) {
+func listenToIncomingCommands(l chan SiegeCommand, d chan struct{}) {
 
-	var cmd Command
+	var cmd SiegeCommand
 
 	for {
 		Log.Println("listening for commands from http listener.")
@@ -59,7 +53,7 @@ func listenToIncomingCommands(l chan Command, d chan struct{}) {
 	}
 }
 
-func parseCommand(c Command) {
+func parseCommand(c SiegeCommand) {
 	switch t := c.cmd.(type) {
 	case NewSiegeSession:
 		Log.Println("Command = ", t)

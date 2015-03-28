@@ -16,6 +16,7 @@ package main
 
 import (
 	"github.com/loadcloud/gosiege/config"
+	"github.com/loadcloud/gosiege/listener"
 	"github.com/loadcloud/gosiege/logger"
 	"github.com/loadcloud/gosiege/manager/cluster"
 	"github.com/loadcloud/gosiege/state"
@@ -44,19 +45,18 @@ func main() {
 	// the corresponding component of the change
 	_ = state.InitGoSiegeState()
 
+	// Create a channel for receiving commands
+	l := make(chan SiegeCommand)
+
 	// Start the cluster manager go routine. Give it the DoneCh for exit signals
-	go cluster.StartClusterManager(DoneCh)
+	go cluster.StartClusterManager(l, DoneCh)
 
-	// admin channel is used to listen to incoming messages from
-	// admin UI or command line
-	adminCh := make(chan string)
+	// Start the http listener and pass in a channel
+	// for it to report the commands in
+	go listener.StartHttpCommandListener(l, d)
 
-	// Start the http command listener
-
-	// Wait for the command
-	Log.Println("Waiting for command...")
 	select {
-	case cmd := <-adminCh:
+	case cmd := <-DoneCh:
 		Log.Println("Command Received :", cmd)
 	}
 

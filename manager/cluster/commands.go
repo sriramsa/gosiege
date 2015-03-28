@@ -2,7 +2,7 @@
 package cluster
 
 // Holds a generic command. Used for sending across channels
-type Command struct {
+type SiegeCommand struct {
 	cmd interface{}
 }
 
