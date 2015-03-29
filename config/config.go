@@ -1,7 +1,14 @@
 // Package config provides configuration needed for initializing the cluster
 package config
 
-import "github.com/loadcloud/gosiege/logger"
+import (
+	"fmt"
+
+	"github.com/loadcloud/gosiege/logger"
+)
+
+// local variable with configuration loaded
+var cfg *ClusterConfig
 
 var log = logger.NewLogger("Config")
 
@@ -27,19 +34,30 @@ type ClusterConfig struct {
 	StressEngine string
 }
 
-var config *ClusterConfig
-
-// Gets the config from the environment and returns the same
-func LoadConfig() (config *ClusterConfig) {
-	config = loadConfig()
-
-	return config
+// Return the key value store option from the configuration
+func KeyValueStoreOption() string {
+	return cfg.DistributedStateProvider
 }
 
+// Gets the config from the environment and returns the same
+func LoadConfig() error {
+	cfg = loadConfig()
+
+	if err := validateConfig(); err != nil {
+		return fmt.Errorf("Couldn't load config:", err)
+	}
+
+	return nil
+}
+
+func validateConfig() error {
+	return nil
+}
 func loadConfig() (config *ClusterConfig) {
 	config = &ClusterConfig{
 		HeartbeatIntervalInSeconds: 5,
 		ListeningPort:              0,
+		MaxProcsToUse:              1,
 
 		DistributedStateProvider: "etcd",
 		StressEngine:             "siege",

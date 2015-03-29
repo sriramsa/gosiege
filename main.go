@@ -15,53 +15,63 @@ This process keeps running that
 package main
 
 import (
+	"log"
+
+	"github.com/loadcloud/gosiege/cluster"
+	"github.com/loadcloud/gosiege/common"
 	"github.com/loadcloud/gosiege/config"
 	"github.com/loadcloud/gosiege/listener"
-	"github.com/loadcloud/gosiege/logger"
-	"github.com/loadcloud/gosiege/manager/cluster"
+	"github.com/loadcloud/gosiege/session"
 	"github.com/loadcloud/gosiege/state"
 )
 
-// For graceful shutdown of the service. When this is closed, all goroutines exit.
-var DoneCh chan struct{}
-
 func main() {
-	var Log = logger.NewLogger("Main")
-
-	Log.Println("==================== BEGIN ====================")
-
 	// If there is a panic recover using this function
 	defer func() {
 		if err := recover(); err != nil {
-			Log.Println("Failed : ", err)
+			log.Println("MAIN: Failed : ", err)
 		}
 	}()
 
+	// Initialize common resources used across the components
+	// logger, channels etc.,
+	_ = common.InitResources()
+	var Log = common.Log
+	log.Println("Resources Initialized")
+
 	// Load the configuration
 	_ = config.LoadConfig()
+	log.Println("Configuration loaded")
 
 	// Initialize Distributed State Engine
 	// This also starts a go routine that watches changes and informs
 	// the corresponding component of the change
 	_ = state.InitGoSiegeState()
+	log.Println("InitGoSiegeState Done")
 
-	// Create a channel for receiving commands
-	l := make(chan SiegeCommand)
+	// Start the State Watcher. This watches for state changes and accepts subscriptions
+	// from other components
+	go state.StartStateWatcher()
+	log.Println("StartStateWatcher Done")
 
-	// Start the cluster manager go routine. Give it the DoneCh for exit signals
-	go cluster.StartClusterManager(l, DoneCh)
+	// Start the cluster manager go routine.
+	go cluster.StartClusterManager()
+	log.Println("StartClusterManager Done")
 
-	// Start the http listener and pass in a channel
-	// for it to report the commands in
-	go listener.StartHttpCommandListener(l, d)
+	// Start session manager
+	go session.StartSessionManager()
+	log.Println("StartSessionManager Done")
+
+	// Start the http listener that listens to commands from Admin Web UI and gosiege cli
+	go listener.StartHttpCommandListener()
+	log.Println("StartHttpCommandListener Done")
 
 	select {
-	case cmd := <-DoneCh:
-		Log.Println("Command Received :", cmd)
+	case <-common.DoneCh:
 	}
 
 	// Closing a channel returns zero value immediately to all waiters.
 	// Each goroutine has this wait in their select. This will make them exit.
-	close(DoneCh)
+	close(common.DoneCh)
 	Log.Println("==================== END ====================")
 }
