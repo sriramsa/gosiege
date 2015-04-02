@@ -20,8 +20,7 @@ func InitResources() error {
 
 	Log = log.New(os.Stdout, "", log.Ltime)
 
-	// Create a channel for receiving commands
-	//listen := make(chan cluster.SiegeCommand)
+	DoneCh = make(chan struct{})
 
 	// Print with file and line numbers
 	log.SetFlags(log.Llongfile)

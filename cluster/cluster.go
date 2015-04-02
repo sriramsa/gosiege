@@ -23,9 +23,10 @@ func StartClusterManager() {
 		}
 	}()
 
-	log.Println("StartingClusterManager")
+	log.Println("Starting ClusterManager")
 
 	// Subscribe to the State Watcher for Cluster Administration Events
+	log.Println("Requesting Subscription from GoSiegeState Watcher")
 	listenCh := state.SubscribeToClusterEvents()
 
 	listenToIncomingEvents(listenCh)
@@ -37,7 +38,7 @@ func listenToIncomingEvents(listen chan state.ClusterEvent) {
 	var cmd state.ClusterEvent
 
 	for {
-		log.Println("listening for Incoming events.")
+		log.Println("Listening for Incoming events.")
 
 		select {
 		case <-time.After(24 * time.Hour):
@@ -46,7 +47,7 @@ func listenToIncomingEvents(listen chan state.ClusterEvent) {
 		case cmd = <-listen:
 			parseEvent(cmd)
 		case <-common.DoneCh:
-			log.Println("Abort Message Received. Exitting")
+			log.Println("DONE signal received, exiting ClusterManager")
 			return
 		}
 

@@ -4,7 +4,11 @@
 //	- Load balance along peers
 package session
 
-import "github.com/loadcloud/gosiege/state"
+import (
+	"log"
+
+	"github.com/loadcloud/gosiege/state"
+)
 
 func StartSessionHandler(sess state.SiegeSession) {
 	// Start the protocol
@@ -12,7 +16,7 @@ func StartSessionHandler(sess state.SiegeSession) {
 	// Get current capability
 	maxRps := CalculateMaxRpsAvailable()
 
-	Log.Println(maxRps)
+	log.Println(maxRps)
 	// Lock the session in the data store
 
 	// Read current session state from distributed store
@@ -49,8 +53,8 @@ func startSiege(completed chan int) {
 		err := cmd.Start()
 		if err != nil {
 
-			Log.Fatal("ERROR: ", err)
-			Log.Fatal(string(marshallOut))
+			log.Fatal("ERROR: ", err)
+			log.Fatal(string(marshallOut))
 		}
 
 		Log.Println("Waiting for 5 secs")

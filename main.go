@@ -15,6 +15,7 @@ This process keeps running that
 package main
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/loadcloud/gosiege/cluster"
@@ -36,7 +37,6 @@ func main() {
 	// Initialize common resources used across the components
 	// logger, channels etc.,
 	_ = common.InitResources()
-	var Log = common.Log
 	log.Println("Resources Initialized")
 
 	// Load the configuration
@@ -66,12 +66,11 @@ func main() {
 	go listener.StartHttpCommandListener()
 	log.Println("StartHttpCommandListener Done")
 
-	select {
-	case <-common.DoneCh:
-	}
+	// Wait for a keystroke to exit.
+	fmt.Scanln()
 
 	// Closing a channel returns zero value immediately to all waiters.
 	// Each goroutine has this wait in their select. This will make them exit.
 	close(common.DoneCh)
-	Log.Println("==================== END ====================")
+	log.Println("==================== END ====================")
 }

@@ -3,28 +3,50 @@
 package listener
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
+
+	"github.com/loadcloud/gosiege/common"
+	"github.com/loadcloud/gosiege/config"
 )
+
+var urlPrefix string
 
 // Starts a http listener and reports incoming messages to the caller
 func StartHttpCommandListener() {
 	defer func() {
 		if err := recover(); err != nil {
-			log.Println("Listener failed", err)
+			log.Println("FATAL : Listener failed", err)
 		}
+
+		// Let everybody exit since we can't listen for incoming commands
+		close(common.DoneCh)
 	}()
 
-	http.HandleFunc("/", handler)
-	http.ListenAndServe(":8080", nil)
+	port := config.Get("ListeningPort")
+	urlPrefix = config.Get("SiegePath")
+
+	http.HandleFunc(urlPrefix, handler)
+	//addr := "127.0.0.1:" + port
+
+	log.Println("Listening on port : ", port)
+
+	//server := http.Server{ Addr: addr, //ErrorLog:, TODO }
+	//if err := server.ListenAndServe(); err != nil {
+	if err := http.ListenAndServe(":"+port, nil); err != nil {
+		log.Fatal("Could not listen on port : ", port, err)
+
+		// Let everybody exit since we can't listen for incoming commands
+		close(common.DoneCh)
+	}
 }
 
 // http handler
 func handler(w http.ResponseWriter, r *http.Request) {
-
 	// error handling separated from code flow for easy readability
 	// Follow this idiom
 	err := func() error {
@@ -44,15 +66,22 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Fprintf(w, "Hi there, thanks for the command %s!", r.URL.Path[1:])
-	fmt.Println("hit by %s", r.URL.Path[1:])
+	// Log the request
+	rjson, _ := json.MarshalIndent(r.URL, "", "\t")
+	log.Println(string(rjson))
+
+	admin := r.URL.Path[1:]
+	cmd := r.URL.Path[2:]
+	fmt.Fprintf(w, "Hi there, thanks for the command %s/%s!\n", admin, cmd)
+	fmt.Fprintf(w, string(rjson))
+	log.Printf("Request %s", rjson)
 
 	query_params := r.URL.Query()
 	//concurrent, _ := query_params["concurrent"]
 	//delay, _ := query_params["delay"]
 	//host, _ := query_params["target"]
 
-	fmt.Println(query_params)
+	log.Println(query_params)
 
 	// Parse the REST API command
 	parseCommand()
@@ -63,11 +92,11 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	//out, err := exec.Command("/usr/bin/siege", "--delay="+delay[0], "--concurrent="+concurrent[0], "http://"+host[0]+":"+port[0]+"/"+r.URL.Path[1:]).Output()
 
 	//if err != nil {
-	//fmt.Println("Error occurred")
-	//fmt.Printf("%s", err)
+	//log.Println("Error occurred")
+	//log.Printf("%s", err)
 	//}
 
-	//fmt.Printf("%s", out)
+	//log.Printf("%s", out)
 
 }
 

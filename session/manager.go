@@ -11,7 +11,6 @@ import (
 	"log"
 
 	"github.com/loadcloud/gosiege/common"
-	"github.com/loadcloud/gosiege/logger"
 	"github.com/loadcloud/gosiege/state"
 )
 
@@ -21,10 +20,11 @@ type SessionId string
 var sessList map[SessionId]state.SessionState
 var sessCmdCh chan state.SessionEvent
 
-var Log = logger.NewLogger("SessionManager")
-
 // Start the session manager. Will be done in a go routine
 func StartSessionManager() {
+
+	log.Println("Subscribing to Session events with watcher")
+
 	// Subscribe to the StateWatcher for Session Events
 	sessCmdCh = state.SubscribeToSessionEvents()
 
@@ -35,11 +35,13 @@ func listenToSessionEvents() {
 
 	var cmd state.SessionEvent
 
+	log.Println("Waiting for Session events from watcher.")
 	for {
 		select {
 		case <-sessCmdCh:
 			parseEvent(cmd)
 		case <-common.DoneCh:
+			log.Println("DONE signal received, extting SessionManager")
 			return
 		}
 	}
@@ -75,14 +77,14 @@ func createNewSession(c state.NewSiegeSession) state.SiegeSession {
 
 	log.Println(marshallOut)
 
-	Log.Print("Session created...")
+	log.Print("Session created...")
 	sess := state.SiegeSession{
 		Pid:  10,
 		Done: make(chan int, 1),
 	}
 
 	sess.SetState(state.Ready)
-	Log.Println("Session State = ", sess.GetState())
+	log.Println("Session State = ", sess.GetState())
 
 	return sess
 }

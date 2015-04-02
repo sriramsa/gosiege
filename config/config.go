@@ -3,14 +3,11 @@ package config
 
 import (
 	"fmt"
-
-	"github.com/loadcloud/gosiege/logger"
+	"log"
 )
 
 // local variable with configuration loaded
 var cfg *ClusterConfig
-
-var log = logger.NewLogger("Config")
 
 type Machine struct {
 	HostName  string
@@ -19,19 +16,32 @@ type Machine struct {
 
 // ClusterConfig struct that contains the cluster configuration information
 type ClusterConfig struct {
-	HeartbeatIntervalInSeconds uint
-	ListeningPort              uint
+	HeartbeatIntervalInSeconds string
+	ListeningPort              string
+	SiegePath                  string
 
 	// Machines in the cluster
 	ClusterMachines []Machine
 
 	// Maximum number of resources to use
-	MaxProcsToUse  int
-	MaxMemoryToUse int
+	MaxProcsToUse  string
+	MaxMemoryToUse string
 
 	DistributedStateProvider string
 
 	StressEngine string
+}
+
+func Get(s string) string {
+	switch s {
+	case "ListeningPort":
+		return cfg.ListeningPort
+	case "SiegePath":
+		return cfg.SiegePath
+	default:
+		// TODO: fix
+		return ""
+	}
 }
 
 // Return the key value store option from the configuration
@@ -55,12 +65,13 @@ func validateConfig() error {
 }
 func loadConfig() (config *ClusterConfig) {
 	config = &ClusterConfig{
-		HeartbeatIntervalInSeconds: 5,
-		ListeningPort:              0,
-		MaxProcsToUse:              1,
+		HeartbeatIntervalInSeconds: "5",
+		ListeningPort:              "8090",
+		MaxProcsToUse:              "1",
 
 		DistributedStateProvider: "etcd",
 		StressEngine:             "siege",
+		SiegePath:                "/gosiege/",
 	}
 
 	log.Println("Config loaded :", config)

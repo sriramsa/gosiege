@@ -36,8 +36,8 @@ var sessionEventSubscriber = make([]chan SessionEvent, 0)
 
 // Start the State Watcher
 func StartStateWatcher() {
-
 	log.Println("Started")
+
 	// poll every second and look for state changes
 	for {
 		select {
@@ -45,7 +45,11 @@ func StartStateWatcher() {
 			// Read the etcd store and see if there are any changes
 
 		case <-common.DoneCh:
+			log.Println("DONE signal received, exiting Watcher")
+
+			return
 		}
+		log.Println("Checking state.")
 	}
 }
 
