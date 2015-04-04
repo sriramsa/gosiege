@@ -11,6 +11,14 @@ This process keeps running that
 		- Main initializes and starts the components
 		- Each component subscribes for notifications from the StateEngine
 		- StateEngine:
+
+	TODO:
+		- 12factor service compliance
+			- Move config to env vars as per 12factor
+			- Logs are streams written directly to the stdout. During local development
+			the user can view on screen. In staging/production each process' stream will
+			be captured by the execution environment, collated together and routed to
+			one or more final destinations.
 */
 package main
 

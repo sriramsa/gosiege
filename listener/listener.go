@@ -9,9 +9,11 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"net/url"
 
 	"github.com/loadcloud/gosiege/common"
 	"github.com/loadcloud/gosiege/config"
+	"github.com/loadcloud/gosiege/state"
 )
 
 var urlPrefix string
@@ -84,7 +86,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	log.Println(query_params)
 
 	// Parse the REST API command
-	parseCommand()
+	siegeCmd := parseCommand(r.URL.Query())
 
 	// Write
 	writeToState()
@@ -100,8 +102,15 @@ func handler(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func parseCommand() {
+func parseCommand(q url.Values) interface{} {
 
+	cmd := state.NewSiegeSession{
+		Concurrent, _: q["concurrent"],
+		Delay, _: q["delay"],
+		Host: q["target"],
+	}
+
+	return cmd
 }
 
 func writeToState() {
