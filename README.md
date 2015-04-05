@@ -6,14 +6,14 @@ A cluster based distributed load generator based on siege stress testing tool. C
 siege cluster that can distribute it's load and target a web server for stress. Can scale 
 linearly based on the number of nodes in the cluster. Is fault-tolerant and can adjust 
 load dynamically based on complete node failures or nodes with reduced capacity.
-Provides UI to administer the load and dynamically scale up or down the stress limits
+Provides UI to administer the load and dynamically scale up or down the stress limits.
 Can also run on a single node.
 
 
 Design
 =======
 #### Terminology
-**GoSiege Cluster** - A set of nodes configured to generate load against a target.  
+**GoSiege Cluster** - A set of nodes configured to generate load against one or more targets.  
 **Siege Node**      - An individual machine(or container) with gosiege installed.  
 **Session**         - A single load testing session with a set of nodes and targets.  
 **GoSiege state**   - Current state of the GoSiege cluster arranged as topics. Contains 
@@ -24,12 +24,12 @@ Design
 1. **GoSiege service daemon**  
 Main daemon that spins up the siege tool. Is made of a set of goroutines(threads) that 
 do a set of operations. Also listens to local http port for incoming commands for
-administration
+administration.
 2. **Admin Web UI**  
 Administration UI running on NodeJS that provides interface to Add, Remove or Update
-Siege sessions
+Siege sessions.
 3. **gosiege** command line tool   
-A command line tool that can do all that the Admin UI can do
+A command line tool that can do all that the Admin UI can do.
 
 #### Design Decisions
 Initial versions will be provided as **Docker** containers. Each docker container will
@@ -62,7 +62,7 @@ Admin operations can be done using either the Admin UI or gosiege command line t
         - New target information
 
 #### Data Structures
-1. Configuration 
+1. Configuration
 2. Session State Key Value Pairs
 2. Commands issued from the web UI
 
@@ -77,21 +77,20 @@ Main spins up these go routines that does the following:
 2. Session handler
 
 ### Load distribution
-When there are more than on node the go cluster, the load needs to be distributed across equally. There
-are a couple of options we can take. 
+When there are more than one node in the GoSiege cluster, the load needs to be distributed across all equally. Below are couple options: 
 1. A leader elected within the group periodically decides how much each node should generate.
 2. Each node gets around the network table, every 5 seconds, and decide how much each 
 should generate to achieve the target.
 
-Choosing option two since there is no need for electing a leader maintaining the same. 
-Whoever talks first is the leader each iteration.
+Option two is better since there is no need for electing a leader maintaining the same. 
+Whoever talks first is the leader in each iteration.
 
 #### Load consensus protocol
 Each node gets around the network table, every 5 seconds, and agrees upon how much each 
 should generate to achieve the target. This is how the dialogue goes, if you evesdrop on them.
 
 Lets say there are 3 nodes NodeA, NodeB and NodeC in a GoSiege Cluster and target requests/sec
-this 5000. The GoSiege Session is configured by the manager and is just starting. 
+is 5000. The GoSiege Session is configured by the manager and is just starting. 
 
 They enter a room with a white board and one marker, figure out we are evesdropping 
 so they don't talk but write on the board to communicate.  Each gets one chance with
@@ -131,7 +130,7 @@ So we introduce Quorum in each GoSiege Cluster. Quorum, as you would know, is a 
 number of votes that should be obtained to be operational. 
 
 In the above GoSiege cluster, the quorum should be set to 2. In this instance of 
-Node C will not proceed with sending traffic since it has only one vote on it's decision.
+Node C will not proceed with sending traffic since it has only one vote on it's decision. In the case of generating load using just one node, Quorum should be set to 1 so that the node does not stop the load. 
 
 As you would have guessed, whiteboard here is the Session State, that gets updated by 
 each node.
