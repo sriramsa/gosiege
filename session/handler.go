@@ -5,18 +5,33 @@
 package session
 
 import (
+	"encoding/json"
 	"log"
+	"os/exec"
 
 	"github.com/loadcloud/gosiege/state"
 )
 
+var siegeProcessList = make([]exec.Cmd, 0)
+
 func StartSessionHandler(sess state.SiegeSession) {
+
+	if jSess, err := json.MarshalIndent(sess, "", "\t"); err != nil {
+		log.Println("Starting a new SESSION HANDLER for : ", string(jSess))
+	} else {
+		log.Println("Error JSON MarshalIndent :", err)
+	}
+
 	// Start the protocol
 
 	// Get current capability
 	maxRps := CalculateMaxRpsAvailable()
 
-	log.Println(maxRps)
+	log.Println("Max RPS : ", maxRps)
+	log.Println("host : ", sess.Host)
+	log.Println("concurrent : ", sess.Concurrent)
+	log.Println("delay : ", sess.Delay)
+
 	// Lock the session in the data store
 
 	// Read current session state from distributed store
@@ -27,6 +42,20 @@ func StartSessionHandler(sess state.SiegeSession) {
 
 	// Release the lock on the session
 
+	// listen for commands
+	select {
+	case <-sess.Done:
+		log.Println("Stop Siege Session received")
+	}
+}
+
+func parseCommand(e state.SessionEvent) {
+	switch e.Cmd.(type) {
+	case state.UpdateSiegeSession:
+		log.Println("Update Siege Session")
+	case state.StopSiegeSession:
+		log.Println("Stop Siege Session received")
+	}
 }
 
 func CalculateMaxRpsAvailable() uint {

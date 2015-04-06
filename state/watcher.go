@@ -19,6 +19,8 @@ const (
 	EventSessionState
 )
 
+var tempWatcherListenChan chan SessionEvent
+
 // Subscriber for a particular session type
 type SessionInstanceSubscriber struct {
 	subs      chan struct{}
@@ -35,8 +37,10 @@ var clusterEventSubscriber = make([]chan ClusterEvent, 0)
 var sessionEventSubscriber = make([]chan SessionEvent, 0)
 
 // Start the State Watcher
-func StartStateWatcher() {
+func StartStateWatcher(c chan SessionEvent) {
 	log.Println("Started")
+
+	tempWatcherListenChan = c
 
 	// poll every second and look for state changes
 	for {
@@ -50,7 +54,37 @@ func StartStateWatcher() {
 			return
 		}
 		log.Println("Checking state.")
+
+		pollState()
 	}
+}
+
+func pollState() {
+	// temp: Just read from the channel listener is going to
+	// write to. this is temp for testing the engine
+
+	c := <-tempWatcherListenChan
+
+	switch c.Cmd.(type) {
+	case NewSiegeSession:
+		log.Println("NewSiegeSession received.")
+		notifySessionEventSubs(c)
+
+	case StopSiegeSession:
+		log.Println("StopSiegeSession received")
+		notifySessionEventSubs(c)
+
+	case UpdateSiegeSession:
+		log.Println("UpdateSiegeSession received.")
+
+	default:
+
+	}
+}
+
+func notifySessionEventSubs(c SessionEvent) {
+	log.Println("Sending event to session subscriber")
+	sessionEventSubscriber[0] <- c
 }
 
 // Components subscribe to Cluster Related Events
@@ -78,7 +112,7 @@ func SubscribeToSessionEvents() (listen chan SessionEvent) {
 	// Add to the subscriber list for session events
 	sessionEventSubscriber = append(sessionEventSubscriber, listen)
 
-	return make(chan SessionEvent)
+	return listen
 }
 
 // Subscribe to the session load channel for a particular session

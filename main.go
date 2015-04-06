@@ -57,9 +57,13 @@ func main() {
 	_ = state.InitGoSiegeState()
 	log.Println("InitGoSiegeState Done")
 
+	// Temp channel for sending cmds from listener to watcher
+	var tempWatcherListenChan chan state.SessionEvent
+	tempWatcherListenChan = make(chan state.SessionEvent)
+
 	// Start the State Watcher. This watches for state changes and accepts subscriptions
 	// from other components
-	go state.StartStateWatcher()
+	go state.StartStateWatcher(tempWatcherListenChan)
 	log.Println("StartStateWatcher Done")
 
 	// Start the cluster manager go routine.
@@ -71,7 +75,7 @@ func main() {
 	log.Println("StartSessionManager Done")
 
 	// Start the http listener that listens to commands from Admin Web UI and gosiege cli
-	go listener.StartHttpCommandListener()
+	go listener.StartHttpCommandListener(tempWatcherListenChan)
 	log.Println("StartHttpCommandListener Done")
 
 	// Wait for a keystroke to exit.

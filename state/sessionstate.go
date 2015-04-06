@@ -18,9 +18,12 @@ const (
 
 // SiegeSession struct
 type SiegeSession struct {
-	Guid string
-	Pid  int
-	Done chan int
+	SessionId  string
+	Pid        int
+	Done       chan int
+	Delay      string
+	Concurrent string
+	Host       string
 
 	state sessionState
 }
