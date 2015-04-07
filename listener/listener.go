@@ -100,7 +100,7 @@ func stopSessHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	siegeCmd := state.SessionEvent{
-		Cmd: cmd,
+		Event: cmd,
 	}
 
 	// Write
@@ -180,7 +180,7 @@ func parseCommand(q url.Values) state.SessionEvent {
 	}
 
 	return state.SessionEvent{
-		Cmd: cmd,
+		Event: cmd,
 	}
 }
 

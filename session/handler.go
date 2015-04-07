@@ -43,14 +43,16 @@ func StartSessionHandler(sess state.SiegeSession) {
 	// Release the lock on the session
 
 	// listen for commands
-	select {
-	case <-sess.Done:
-		log.Println("Stop Siege Session received")
+	for {
+		select {
+		case cmd := <-sess.HandlerCh:
+			parseCommand(cmd)
+		}
 	}
 }
 
 func parseCommand(e state.SessionEvent) {
-	switch e.Cmd.(type) {
+	switch e.Event.(type) {
 	case state.UpdateSiegeSession:
 		log.Println("Update Siege Session")
 	case state.StopSiegeSession:

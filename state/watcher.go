@@ -65,7 +65,7 @@ func pollState() {
 
 	c := <-tempWatcherListenChan
 
-	switch c.Cmd.(type) {
+	switch c.Event.(type) {
 	case NewSiegeSession:
 		log.Println("NewSiegeSession received.")
 		notifySessionEventSubs(c)

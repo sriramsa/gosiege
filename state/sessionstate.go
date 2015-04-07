@@ -20,7 +20,7 @@ const (
 type SiegeSession struct {
 	SessionId  string
 	Pid        int
-	Done       chan int
+	HandlerCh  chan SessionEvent
 	Delay      string
 	Concurrent string
 	Host       string

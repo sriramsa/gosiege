@@ -49,31 +49,41 @@ func listenToSessionEvents() {
 }
 
 func parseEvent(c state.SessionEvent) {
-	switch t := c.Cmd.(type) {
+	switch t := c.Event.(type) {
 	case state.NewSiegeSession:
 		log.Println("NewSiegeSession Command Received", t)
-		sessParams, _ := c.Cmd.(state.NewSiegeSession)
+		sessParams, _ := c.Event.(state.NewSiegeSession)
 		sess := createNewSession(sessParams)
 		// Start the session immediately
 		startSession(sess)
 
 	case state.StopSiegeSession:
 		log.Println("StopSiegeSession Command Received", t)
-		log.Println("Event = ", t)
-		stopSession(c.Cmd.(state.StopSiegeSession))
+		sessParams, _ := c.Event.(state.StopSiegeSession)
+		// Send the command to the session handler
+		if sess, found := sessMap[sessParams.SessionId]; found {
+			log.Println("Sending event to session handler.")
+			sess.HandlerCh <- c
+		} else {
+			log.Println("Session not found Id : ", sessParams.SessionId)
+		}
+		//stopSession(c.Cmd.(state.StopSiegeSession))
 
 	case state.UpdateSiegeSession:
 		log.Println("UpdateSiegeSession Command Received", t)
-		updateSession(c.Cmd.(state.UpdateSiegeSession))
+		updateSession(c.Event.(state.UpdateSiegeSession))
 
 	case state.EndSiegeSession:
 		log.Println("EndSiegeSession Command Received", t)
-		endSession(c.Cmd.(state.EndSiegeSession))
+		endSession(c.Event.(state.EndSiegeSession))
 
 	default:
 		log.Println("Event = ", t)
 	}
 }
+
+// Map of all the sessions
+var sessMap = make(map[string]state.SiegeSession)
 
 func createNewSession(c state.NewSiegeSession) state.SiegeSession {
 	marshallOut, _ := json.MarshalIndent(c, "", "\t")
@@ -85,7 +95,7 @@ func createNewSession(c state.NewSiegeSession) state.SiegeSession {
 		Concurrent: c.Concurrent,
 		Host:       c.Host,
 		Delay:      c.Delay,
-		Done:       make(chan int, 1),
+		HandlerCh:  make(chan state.SessionEvent, 1),
 	}
 
 	log.Print("Session created...")
@@ -97,14 +107,21 @@ func createNewSession(c state.NewSiegeSession) state.SiegeSession {
 
 func startSession(sess state.SiegeSession) {
 
+	if _, found := sessMap[sess.SessionId]; found {
+		log.Println("Session already found: ", sess.SessionId)
+		return
+	}
+
+	sessMap[sess.SessionId] = sess
+
 	// spin up the session instance handler
 	go StartSessionHandler(sess)
 }
 
 func stopSession(c state.StopSiegeSession) {
-	marshallOut, _ := json.MarshalIndent(c, "", "\t")
+	log.Println("Stopping session : ", c.SessionId)
 
-	log.Println(string(marshallOut))
+	//sessMap[c.SessionId].AdminCh <- c
 }
 
 func updateSession(c state.UpdateSiegeSession) {
