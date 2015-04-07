@@ -32,6 +32,7 @@ func StartSessionHandler(sess state.SiegeSession) {
 	log.Println("concurrent : ", sess.Concurrent)
 	log.Println("delay : ", sess.Delay)
 
+	startSiege(sess)
 	// Lock the session in the data store
 
 	// Read current session state from distributed store
@@ -64,30 +65,27 @@ func CalculateMaxRpsAvailable() uint {
 	return 1000
 }
 
-func startSiege(completed chan int) {
-	/*
-		siegeSession := NewSession()
-		_ = siegeSession.Start()
-
-		defer func() {
-			if err := recover(); err != nil {
-				Log.Println("Command Failed : ", err)
-
-				completed <- -1
-			}
-		}()
-
-		cmd := exec.Command("siege", "--version")
-
-		marshallOut, _ := json.MarshalIndent(cmd, "", "\t")
-
-		err := cmd.Start()
-		if err != nil {
-
-			log.Fatal("ERROR: ", err)
-			log.Fatal(string(marshallOut))
+func startSiege(sess state.SiegeSession) {
+	defer func() {
+		if err := recover(); err != nil {
+			log.Println("Command Failed : ", err)
 		}
+	}()
 
+	cmd := exec.Command("siege", "--quiet", "-c", sess.Concurrent, "-d", sess.Delay, "http://localhost:8888")
+
+	marshallOut, _ := json.MarshalIndent(cmd, "", "\t")
+
+	log.Println("Cmd : ", string(marshallOut))
+	// Starting siege
+	err := cmd.Start()
+	if err != nil {
+
+		log.Fatal("ERROR: ", err)
+		log.Fatal(string(marshallOut))
+	}
+
+	/*
 		Log.Println("Waiting for 5 secs")
 		time.Sleep(5 * time.Second)
 		Log.Println("Sending kill signal")
