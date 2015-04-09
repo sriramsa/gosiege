@@ -7,7 +7,8 @@ type SessionEvent struct {
 }
 
 type NewSiegeSession struct {
-	Concurrent, Delay, Host string
+	Concurrent, Port int
+	Delay, Host      string
 }
 
 type EndSiegeSession struct {
@@ -19,5 +20,6 @@ type StopSiegeSession struct {
 }
 
 type UpdateSiegeSession struct {
-	Concurrent, Delay, Host string
+	NewTargetUsers         int
+	SessionId, Delay, Host string
 }

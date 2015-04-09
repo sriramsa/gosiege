@@ -1,9 +1,7 @@
 // Session state
 package state
 
-import "github.com/loadcloud/gosiege/logger"
-
-var Log = logger.NewLogger("SessionManager")
+import "log"
 
 type sessionState int
 
@@ -18,12 +16,17 @@ const (
 
 // SiegeSession struct
 type SiegeSession struct {
-	SessionId  string
-	Pid        int
-	HandlerCh  chan SessionEvent
-	Delay      string
-	Concurrent string
-	Host       string
+	SessionId string
+	Pid       uint32
+	Delay     string
+	Host      string
+	Proto     string // http or https
+	Port      int
+
+	TargetUsers int // Target users for the run
+	ActiveUsers int // Active users
+
+	HandlerCh chan SessionEvent
 
 	state sessionState
 }
@@ -33,17 +36,16 @@ func (s SiegeSession) GetState() sessionState {
 }
 
 func (s SiegeSession) SetState(st sessionState) error {
-
 	s.state = st
-
 	return nil
 }
+
 func (s SiegeSession) Start() int {
-	Log.Print("Started")
+	log.Print("Started")
 	return -1
 }
 
 func (s SiegeSession) Stop() int {
-	Log.Print("Stopped")
+	log.Print("Stopped")
 	return -1
 }

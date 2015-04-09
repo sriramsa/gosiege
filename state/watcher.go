@@ -76,6 +76,7 @@ func pollState() {
 
 	case UpdateSiegeSession:
 		log.Println("UpdateSiegeSession received.")
+		notifySessionEventSubs(c)
 
 	default:
 

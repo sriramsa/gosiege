@@ -10,6 +10,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"strconv"
 
 	"github.com/loadcloud/gosiege/common"
 	"github.com/loadcloud/gosiege/config"
@@ -38,6 +39,7 @@ func StartHttpCommandListener(writeCh chan state.SessionEvent) {
 	//http.HandleFunc(urlPrefix, newSessHandler)
 	http.HandleFunc("/gosiege/new", newSessHandler)
 	http.HandleFunc("/gosiege/stop", stopSessHandler)
+	http.HandleFunc("/gosiege/update", updateSessHandler)
 	//addr := "127.0.0.1:" + port
 
 	log.Println("Listening on port : ", port)
@@ -50,6 +52,72 @@ func StartHttpCommandListener(writeCh chan state.SessionEvent) {
 		// Let everybody exit since we can't listen for incoming commands
 		close(common.DoneCh)
 	}
+}
+
+func updateSessHandler(w http.ResponseWriter, r *http.Request) {
+	// error handling separated from code flow for easy readability
+	// Follow this idiom
+	err := func() error {
+		if r.Method != "GET" {
+			return errors.New("expected GET")
+		}
+
+		//if input := parseInput(r); input != "command" {
+		//return errors.New("malformed command")
+		//}
+		return nil
+	}()
+
+	if err != nil {
+		w.WriteHeader(400)
+		io.WriteString(w, "error found")
+		return
+	}
+
+	// Log the request
+	rjson, _ := json.MarshalIndent(r.URL, "", "\t")
+
+	fmt.Fprintf(w, string(rjson))
+	log.Printf("Request %s", rjson)
+
+	query_params := r.URL.Query()
+	log.Println(query_params)
+
+	// Parse the REST API command
+	//siegeCmd := parseCommand(r.URL.Query())
+
+	var check = func(s string) string {
+		val, ok := query_params[s]
+		if ok {
+			return val[0]
+		}
+		log.Panic(s, " could not be read. error :")
+		return ""
+	}
+
+	var getInt = func(s string) int {
+		v, err := strconv.Atoi(check(s))
+		if err != nil {
+			log.Println("Error reading User param :", s)
+		}
+		return v
+	}
+
+	users := getInt("concurrent")
+	sessId := check("sessId")
+
+	cmd := state.UpdateSiegeSession{
+		SessionId:      sessId,
+		NewTargetUsers: users,
+	}
+
+	siegeCmd := state.SessionEvent{
+		Event: cmd,
+	}
+
+	// Write
+	writeToState(siegeCmd)
+
 }
 
 func stopSessHandler(w http.ResponseWriter, r *http.Request) {
@@ -169,14 +237,25 @@ func parseCommand(q url.Values) state.SessionEvent {
 		return ""
 	}
 
-	concurrent := check("concurrent")
+	var getInt = func(s string) int {
+		v, err := strconv.Atoi(check(s))
+		if err != nil {
+			log.Println("Error reading User param :", s)
+		}
+		return v
+	}
+
+	concurrent := getInt("concurrent")
+
 	delay := check("delay")
 	host := check("target")
+	port := getInt("port")
 
 	cmd := state.NewSiegeSession{
 		Concurrent: concurrent,
 		Delay:      delay,
 		Host:       host,
+		Port:       port,
 	}
 
 	return state.SessionEvent{

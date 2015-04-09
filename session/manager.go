@@ -54,12 +54,14 @@ func parseEvent(c state.SessionEvent) {
 		log.Println("NewSiegeSession Command Received", t)
 		sessParams, _ := c.Event.(state.NewSiegeSession)
 		sess := createNewSession(sessParams)
+
 		// Start the session immediately
 		startSession(sess)
 
 	case state.StopSiegeSession:
 		log.Println("StopSiegeSession Command Received", t)
 		sessParams, _ := c.Event.(state.StopSiegeSession)
+
 		// Send the command to the session handler
 		if sess, found := sessMap[sessParams.SessionId]; found {
 			log.Println("Sending event to session handler.")
@@ -71,7 +73,15 @@ func parseEvent(c state.SessionEvent) {
 
 	case state.UpdateSiegeSession:
 		log.Println("UpdateSiegeSession Command Received", t)
-		updateSession(c.Event.(state.UpdateSiegeSession))
+		sessParams, _ := c.Event.(state.UpdateSiegeSession)
+
+		// Send the command to the session handler
+		if sess, found := sessMap[sessParams.SessionId]; found {
+			log.Println("Sending event to session handler.")
+			sess.HandlerCh <- c
+		} else {
+			log.Println("Session not found Id : ", sessParams.SessionId)
+		}
 
 	case state.EndSiegeSession:
 		log.Println("EndSiegeSession Command Received", t)
@@ -91,11 +101,15 @@ func createNewSession(c state.NewSiegeSession) state.SiegeSession {
 	log.Println("Command : ", marshallOut)
 
 	sess := state.SiegeSession{
-		SessionId:  "1234",
-		Concurrent: c.Concurrent,
-		Host:       c.Host,
-		Delay:      c.Delay,
-		HandlerCh:  make(chan state.SessionEvent, 1),
+		SessionId: "1234",
+		Host:      c.Host,
+		Delay:     c.Delay,
+		Port:      c.Port,
+
+		TargetUsers: c.Concurrent,
+		ActiveUsers: 0,
+
+		HandlerCh: make(chan state.SessionEvent, 1),
 	}
 
 	log.Print("Session created...")
@@ -116,18 +130,6 @@ func startSession(sess state.SiegeSession) {
 
 	// spin up the session instance handler
 	go StartSessionHandler(sess)
-}
-
-func stopSession(c state.StopSiegeSession) {
-	log.Println("Stopping session : ", c.SessionId)
-
-	//sessMap[c.SessionId].AdminCh <- c
-}
-
-func updateSession(c state.UpdateSiegeSession) {
-	marshallOut, _ := json.MarshalIndent(c, "", "\t")
-
-	log.Println(string(marshallOut))
 }
 
 func endSession(c state.EndSiegeSession) {

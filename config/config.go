@@ -32,6 +32,10 @@ type ClusterConfig struct {
 	StressEngine string
 }
 
+type SessionConfig struct {
+	UsersPerSiegeProc int
+}
+
 func Get(s string) string {
 	switch s {
 	case "ListeningPort":

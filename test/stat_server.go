@@ -34,7 +34,7 @@ func testHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func printStats() {
-	log.Println("Hit/Sec : ", s.hitSec, " Total : ", s.hitsTotal)
+	go log.Println("Hit/Sec : ", s.hitSec, " Total : ", s.hitsTotal)
 	atomic.StoreUint32(&s.hitSec, 0)
 	t.Reset(time.Second * 1)
 }

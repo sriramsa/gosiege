@@ -6,17 +6,22 @@ package session
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"os/exec"
 
 	"github.com/loadcloud/gosiege/state"
 )
 
-var siegeProcessList = make([]exec.Cmd, 0)
+// Current Siege Session being managed by this handler
+var sess state.SiegeSession
 
-func StartSessionHandler(sess state.SiegeSession) {
+// List of processes running siege instances
+var siegeProcs = make([]exec.Cmd, 0)
 
-	if jSess, err := json.MarshalIndent(sess, "", "\t"); err != nil {
+func StartSessionHandler(session state.SiegeSession) {
+
+	if jSess, err := json.MarshalIndent(session, "", "\t"); err != nil {
 		log.Println("Starting a new SESSION HANDLER for : ", string(jSess))
 	} else {
 		log.Println("Error JSON MarshalIndent :", err)
@@ -28,11 +33,13 @@ func StartSessionHandler(sess state.SiegeSession) {
 	maxRps := CalculateMaxRpsAvailable()
 
 	log.Println("Max RPS : ", maxRps)
-	log.Println("host : ", sess.Host)
-	log.Println("concurrent : ", sess.Concurrent)
-	log.Println("delay : ", sess.Delay)
+	log.Println("host : ", session.Host)
+	log.Println("concurrent : ", session.TargetUsers)
+	log.Println("delay : ", session.Delay)
 
-	startSiege(sess)
+	sess = session
+
+	startOrUpdateSiege()
 	// Lock the session in the data store
 
 	// Read current session state from distributed store
@@ -46,18 +53,22 @@ func StartSessionHandler(sess state.SiegeSession) {
 	// listen for commands
 	for {
 		select {
-		case cmd := <-sess.HandlerCh:
+		case cmd := <-session.HandlerCh:
 			parseCommand(cmd)
 		}
 	}
 }
 
 func parseCommand(e state.SessionEvent) {
+
 	switch e.Event.(type) {
 	case state.UpdateSiegeSession:
 		log.Println("Update Siege Session")
+		updateSiege(e.Event.(state.UpdateSiegeSession))
+
 	case state.StopSiegeSession:
 		log.Println("Stop Siege Session received")
+		stopAllSiege()
 	}
 }
 
@@ -65,48 +76,101 @@ func CalculateMaxRpsAvailable() uint {
 	return 1000
 }
 
-func startSiege(sess state.SiegeSession) {
+func updateSiege(e state.UpdateSiegeSession) {
+	log.Println("Updating Siege - New target : ", e.NewTargetUsers, " Old :", sess.TargetUsers)
+	sess.TargetUsers = e.NewTargetUsers
+
+	startOrUpdateSiege()
+}
+
+// Stop all siege processes
+func stopAllSiege() {
+	log.Println("Stopping all Siege processes")
+
+	for i := range siegeProcs {
+		cmd := siegeProcs[i]
+		// go
+		func() {
+			log.Print(". Killing Process : ", cmd.Process.Pid)
+			if err := cmd.Process.Kill(); err != nil {
+				log.Println("Could not Kill : ", err)
+			} else {
+				log.Println("...killed")
+			}
+		}()
+		//marshallOut, err = json.MarshalIndent(cmd, "after :", "\t")
+		//log.Println(string(marshallOut))
+
+		// FIX with sync
+		sess.ActiveUsers = 0
+
+		// Is there a better way?
+		siegeProcs = make([]exec.Cmd, 0)
+	}
+}
+
+func startOrUpdateSiege() {
 	defer func() {
 		if err := recover(); err != nil {
 			log.Println("Command Failed : ", err)
+			sess.SetState(state.Error)
+
+			stopAllSiege()
 		}
 	}()
 
-	cmd := exec.Command("siege", "--quiet", "-c", sess.Concurrent, "-d", sess.Delay, "http://localhost:8888")
+	spinUpSiege(10)
+	// Number of siege procs we need
+	//numSigeProcs := (sess.Concurrent / users) + ((sess.Concurrent % users) / (sess.Concurrent % users))
 
-	marshallOut, _ := json.MarshalIndent(cmd, "", "\t")
+	// Create the slice to hold these procs
+	//siegeProcs = make([]exec.Cmd, numSigeProcs)
 
-	log.Println("Cmd : ", string(marshallOut))
-	// Starting siege
-	err := cmd.Start()
-	if err != nil {
+	//marshallOut, _ := json.MarshalIndent(cmd, "", "\t")
 
-		log.Fatal("ERROR: ", err)
-		log.Fatal(string(marshallOut))
-	}
+	//log.Println("Cmd : ", string(marshallOut))
+}
 
-	/*
-		Log.Println("Waiting for 5 secs")
-		time.Sleep(5 * time.Second)
-		Log.Println("Sending kill signal")
-		if err := cmd.Process.Kill(); err != nil {
-			Log.Println("Could not Kill : ", err)
-		} else {
-			Log.Println("Killed Process")
+// Spins up one siege per usersPerSiege
+func spinUpSiege(usersPerSiege int) {
+	// Build the parameters
+	delayParam := fmt.Sprintf("--delay=%s", sess.Delay)
+	URLParam := fmt.Sprintf("http://%s:%d", sess.Host, sess.Port)
+
+	for sess.TargetUsers > sess.ActiveUsers {
+		users := sess.TargetUsers - sess.ActiveUsers
+		if users > usersPerSiege {
+			users = usersPerSiege
 		}
 
-		process := cmd.Process
+		userParam := fmt.Sprintf("--concurrent=%d", users)
 
-		retOutput = "abcd"
+		// Construct the command
+		cmd := exec.Command("siege",
+			"--quiet",
+			userParam,
+			delayParam,
+			URLParam)
 
-		time.Sleep(2 * time.Second)
+		// Starting siege
+		if err := cmd.Start(); err != nil {
+			log.Panic("ERROR: ", err)
+			return
+		}
 
-		marshallOut, err = json.MarshalIndent(cmd, "after :", "\t")
-		Log.Println("\nAFTER:")
-		Log.Println(string(marshallOut))
+		sess.ActiveUsers += users
 
-		completed <- process.Pid
+		addToProcList(*cmd)
+		log.Println("Siege process created - PID : ", cmd.Process.Pid, " ", userParam)
+	}
 
-		return retOutput
-	*/
+	if jSess, err := json.MarshalIndent(sess, "", "\t"); err != nil {
+		log.Println("Current session : ", string(jSess))
+	} else {
+		log.Println("Error JSON MarshalIndent :", err)
+	}
+}
+
+func addToProcList(cmd exec.Cmd) {
+	siegeProcs = append(siegeProcs, cmd)
 }
