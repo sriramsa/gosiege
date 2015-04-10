@@ -1,5 +1,9 @@
 REST API
 ========
+GoSiege http listener exposes these REST APIs. These are mainly for the web front-end to use to administer the cluster. 
+
+Two resources are exposed via REST APIs by the listener; Sessions and Nodes.
+
 
 SESSIONS
 --------
