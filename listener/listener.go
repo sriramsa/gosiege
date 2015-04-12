@@ -7,6 +7,7 @@
 package listener
 
 import (
+	"errors"
 	"log"
 	"net/http"
 	"strconv"
@@ -52,23 +53,32 @@ func ShutdownRESTApiListener() {
 	stopSession("1234")
 }
 
-func reqString(r *http.Request, s string) string {
+func reqString(r *http.Request, s string) (val string, err error) {
 
-	val := r.FormValue(s)
+	val = r.FormValue(s)
 
 	if val == "" {
-		log.Panic(s, " could not be read. error :")
+		return val, errors.New(s + " could not be read. error :")
 	}
 
-	return val
+	return val, nil
 }
 
-func reqInt(r *http.Request, s string) int {
-	val, err := strconv.Atoi(reqString(r, s))
+func reqInt(r *http.Request, s string) (val int, err error) {
+	var sv string
+	err = func() error {
+		if sv, err = reqString(r, s); err != nil {
+			return err
+		}
+
+		val, err = strconv.Atoi(sv)
+		return err
+	}()
+
 	if err != nil {
-		log.Panic("Error reading User param as Int :", s)
+		return 0, errors.New(s + " could not be found.")
 	}
-	return val
+	return val, nil
 }
 
 func writeToState(cmd state.SessionEvent) {
