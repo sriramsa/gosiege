@@ -54,31 +54,22 @@ func ShutdownRESTApiListener() {
 }
 
 func reqString(r *http.Request, s string) (val string, err error) {
-
-	val = r.FormValue(s)
-
-	if val == "" {
-		return val, errors.New(s + " could not be read. error :")
+	if val = r.FormValue(s); val == "" {
+		err = errors.New(s + " could not be read. error :")
 	}
 
-	return val, nil
+	return val, err
 }
 
 func reqInt(r *http.Request, s string) (val int, err error) {
 	var sv string
-	err = func() error {
-		if sv, err = reqString(r, s); err != nil {
-			return err
-		}
-
-		val, err = strconv.Atoi(sv)
-		return err
-	}()
-
-	if err != nil {
-		return 0, errors.New(s + " could not be found.")
+	if sv, err = reqString(r, s); err != nil {
+		return 0, err
 	}
-	return val, nil
+
+	val, err = strconv.Atoi(sv)
+
+	return val, err
 }
 
 func writeToState(cmd state.SessionEvent) {

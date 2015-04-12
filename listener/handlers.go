@@ -2,6 +2,7 @@
 package listener
 
 import (
+	"errors"
 	"log"
 	"net/http"
 
@@ -11,18 +12,31 @@ import (
 
 // Creates a new session
 func newSessHandler(w http.ResponseWriter, r *http.Request) {
-	var concurrent int
+	var concurrent, port int
+	var host, delay string
 	var err error
-	if concurrent, err := reqInt(r, "concurrent"); err != nil {
-		http.Error(w, "Concurrent not found.", http.StatusBadRequest)
+
+	err = func() error {
+		if concurrent, err = reqInt(r, "concurrent"); err != nil {
+			return errors.New("Valid concurrent not found.")
+		}
+
+		if port, err = reqInt(r, "port"); err != nil {
+			return errors.New("Valid concurrent not found.")
+		}
+		return nil
+	}()
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	event := state.NewSiegeSession{
 		Concurrent: concurrent,
-		Delay:      reqString(r, "delay"),
-		Host:       reqString(r, "target"),
-		Port:       reqInt(r, "port"),
+		Delay:      delay,
+		Host:       host,
+		Port:       port,
 	}
 
 	// Write
@@ -32,12 +46,27 @@ func newSessHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func updateSessHandler(w http.ResponseWriter, r *http.Request) {
+	var concurrent int
+	var err error
+
+	err = func() error {
+		if concurrent, err = reqInt(r, "concurrent"); err != nil {
+			return errors.New("Valid concurrent not found.")
+		}
+		return nil
+	}()
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
 	// Create the event. Id will always be available since
 	// it is part of the routing
 	siegeCmd := state.SessionEvent{
 		Event: state.UpdateSiegeSession{
 			SessionId:      mux.Vars(r)["Id"],
-			NewTargetUsers: reqInt(r, "concurrent"),
+			NewTargetUsers: concurrent,
 		},
 	}
 
@@ -48,8 +77,7 @@ func updateSessHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func stopSessHandler(w http.ResponseWriter, r *http.Request) {
-	// Id will always be available since
-	// it is part of the routing
+	// Id will always be available since it is part of the routing
 	id := mux.Vars(r)["Id"]
 
 	stopSession(id)
