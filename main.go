@@ -25,6 +25,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/loadcloud/gosiege/cluster"
 	"github.com/loadcloud/gosiege/common"
@@ -81,8 +82,19 @@ func main() {
 	// Wait for a keystroke to exit.
 	fmt.Scanln()
 
+	shutdown()
+
 	// Closing a channel returns zero value immediately to all waiters.
 	// Each goroutine has this wait in their select. This will make them exit.
-	close(common.DoneCh)
 	log.Println("==================== END ====================")
+}
+
+func shutdown() {
+	listener.ShutdownRESTApiListener()
+
+	// Wait for all the sessions to get kill signal.
+	// TODO: Use a channel to signal end
+	time.Sleep(time.Second * 2)
+
+	close(common.DoneCh)
 }

@@ -101,12 +101,12 @@ func stopAllSiege() {
 		//marshallOut, err = json.MarshalIndent(cmd, "after :", "\t")
 		//log.Println(string(marshallOut))
 
-		// FIX with sync
-		sess.ActiveUsers = 0
-
-		// Is there a better way?
-		siegeProcs = make([]exec.Cmd, 0)
 	}
+	// FIX with sync
+	sess.ActiveUsers = 0
+
+	// Is there a better way?
+	siegeProcs = make([]exec.Cmd, 0)
 }
 
 func startOrUpdateSiege() {

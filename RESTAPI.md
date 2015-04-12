@@ -11,7 +11,7 @@ SESSIONS
 Create a new Session.   
 ```
     PUT http://<host>/sessions
-        JSON Payload:  
+        Payload:  
 ```
 
 ####READ
@@ -39,7 +39,11 @@ Start or Stop an existing Session.
 Update an existing Session.
 ```
     PATCH http://<host>/sessions/update/<SessionId>
-          JSON Payload:  
+        Payload:
+          concurrent=14
+          delay=1
+          target=localhost
+          port=8888
 ```
 
 
@@ -47,7 +51,7 @@ Update an existing Session.
 Delete an existing Session.
 ```
     DELETE http://<host>/sessions/<SessionId>
-           JSON Payload:  
+           Payload:  
 ```
 
 
@@ -58,7 +62,7 @@ NODES
 Add a new node to the cluster  
 ```
     PUT http://<host>/nodes
-        JSON Payload:  
+        Payload:  
 ```
 
 ####READ
@@ -84,7 +88,7 @@ Activate or Deactivate an existing Node.
 Update an existing Session.
 ```
     PATCH http://<host>/nodes/update/<NodeName>
-          JSON Payload:  
+          Payload:  
 ```
 
 
@@ -92,6 +96,6 @@ Update an existing Session.
 Delete an existing Session.
 ```
     DELETE http://<host>/nodes/<NodeName>
-           JSON Payload:  
+           Payload:  
 ```
 

@@ -164,3 +164,5 @@ same.
 ### manager/cluster
 Administers the GoSiege cluster. Is a set of go routines that listens to commands from 
 Admin UI or command line and does CRUD operations on the cluster.  
+
+## REST API

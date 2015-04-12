@@ -1,15 +1,14 @@
 // Package main provides listener that listens to the http port for incoming
 // messages from Admin NodeJS UI or Command Line
+/*
+ REST API
+
+*/
 package listener
 
 import (
-	"encoding/json"
-	"errors"
-	"fmt"
-	"io"
 	"log"
 	"net/http"
-	"net/url"
 	"strconv"
 
 	"github.com/loadcloud/gosiege/common"
@@ -36,16 +35,11 @@ func StartHttpCommandListener(writeCh chan state.SessionEvent) {
 	port := config.Get("ListeningPort")
 	urlPrefix = config.Get("SiegePath")
 
-	//http.HandleFunc(urlPrefix, newSessHandler)
-	http.HandleFunc("/gosiege/new", newSessHandler)
-	http.HandleFunc("/gosiege/stop", stopSessHandler)
-	http.HandleFunc("/gosiege/update", updateSessHandler)
-	//addr := "127.0.0.1:" + port
+	regApiRoutes()
 
 	log.Println("Listening on port : ", port)
 
 	//server := http.Server{ Addr: addr, //ErrorLog:, TODO }
-	//if err := server.ListenAndServe(); err != nil {
 	if err := http.ListenAndServe(":"+port, nil); err != nil {
 		log.Fatal("Could not listen on port : ", port, err)
 
@@ -54,213 +48,27 @@ func StartHttpCommandListener(writeCh chan state.SessionEvent) {
 	}
 }
 
-func updateSessHandler(w http.ResponseWriter, r *http.Request) {
-	// error handling separated from code flow for easy readability
-	// Follow this idiom
-	err := func() error {
-		if r.Method != "GET" {
-			return errors.New("expected GET")
-		}
+func ShutdownRESTApiListener() {
+	stopSession("1234")
+}
 
-		//if input := parseInput(r); input != "command" {
-		//return errors.New("malformed command")
-		//}
-		return nil
-	}()
+func reqString(r *http.Request, s string) string {
 
-	if err != nil {
-		w.WriteHeader(400)
-		io.WriteString(w, "error found")
-		return
-	}
+	val := r.FormValue(s)
 
-	// Log the request
-	rjson, _ := json.MarshalIndent(r.URL, "", "\t")
-
-	fmt.Fprintf(w, string(rjson))
-	log.Printf("Request %s", rjson)
-
-	query_params := r.URL.Query()
-	log.Println(query_params)
-
-	// Parse the REST API command
-	//siegeCmd := parseCommand(r.URL.Query())
-
-	var check = func(s string) string {
-		val, ok := query_params[s]
-		if ok {
-			return val[0]
-		}
+	if val == "" {
 		log.Panic(s, " could not be read. error :")
-		return ""
 	}
 
-	var getInt = func(s string) int {
-		v, err := strconv.Atoi(check(s))
-		if err != nil {
-			log.Println("Error reading User param :", s)
-		}
-		return v
-	}
-
-	users := getInt("concurrent")
-	sessId := check("sessId")
-
-	cmd := state.UpdateSiegeSession{
-		SessionId:      sessId,
-		NewTargetUsers: users,
-	}
-
-	siegeCmd := state.SessionEvent{
-		Event: cmd,
-	}
-
-	// Write
-	writeToState(siegeCmd)
-
+	return val
 }
 
-func stopSessHandler(w http.ResponseWriter, r *http.Request) {
-	// error handling separated from code flow for easy readability
-	// Follow this idiom
-	err := func() error {
-		if r.Method != "GET" {
-			return errors.New("expected GET")
-		}
-
-		//if input := parseInput(r); input != "command" {
-		//return errors.New("malformed command")
-		//}
-		return nil
-	}()
-
+func reqInt(r *http.Request, s string) int {
+	val, err := strconv.Atoi(reqString(r, s))
 	if err != nil {
-		w.WriteHeader(400)
-		io.WriteString(w, "error found")
-		return
+		log.Panic("Error reading User param as Int :", s)
 	}
-
-	// Log the request
-	rjson, _ := json.MarshalIndent(r.URL, "", "\t")
-
-	fmt.Fprintf(w, string(rjson))
-	log.Printf("Request %s", rjson)
-
-	query_params := r.URL.Query()
-	log.Println(query_params)
-
-	// Parse the REST API command
-	//siegeCmd := parseCommand(r.URL.Query())
-
-	var check = func(s string) string {
-		val, ok := query_params[s]
-		if ok {
-			return val[0]
-		}
-		log.Panic(s, " could not be read. error :")
-		return ""
-	}
-
-	sessId := check("sessId")
-
-	cmd := state.StopSiegeSession{
-		SessionId: sessId,
-	}
-
-	siegeCmd := state.SessionEvent{
-		Event: cmd,
-	}
-
-	// Write
-	writeToState(siegeCmd)
-}
-
-// http handler
-func newSessHandler(w http.ResponseWriter, r *http.Request) {
-	// error handling separated from code flow for easy readability
-	// Follow this idiom
-	err := func() error {
-		if r.Method != "GET" {
-			return errors.New("expected GET")
-		}
-
-		//if input := parseInput(r); input != "command" {
-		//return errors.New("malformed command")
-		//}
-		return nil
-	}()
-
-	if err != nil {
-		w.WriteHeader(400)
-		io.WriteString(w, "error found")
-		return
-	}
-
-	// Log the request
-	rjson, _ := json.MarshalIndent(r.URL, "", "\t")
-
-	admin := r.URL.Path[1:]
-	cmd := r.URL.Path[2:]
-	fmt.Fprintf(w, "Hi there, thanks for the command %s/%s!\n", admin, cmd)
-	fmt.Fprintf(w, string(rjson))
-
-	log.Printf("Request %s", string(rjson))
-
-	query_params := r.URL.Query()
-	log.Println(query_params)
-
-	// Parse the REST API command
-	siegeCmd := parseCommand(r.URL.Query())
-
-	// Write
-	writeToState(siegeCmd)
-
-	//out, err := exec.Command("/usr/bin/siege", "--delay="+delay[0], "--concurrent="+concurrent[0], "http://"+host[0]+":"+port[0]+"/"+r.URL.Path[1:]).Output()
-
-	//if err != nil {
-	//log.Println("Error occurred")
-	//log.Printf("%s", err)
-	//}
-
-	//log.Printf("%s", out)
-
-}
-
-func parseCommand(q url.Values) state.SessionEvent {
-
-	var check = func(s string) string {
-		val, ok := q[s]
-		if ok {
-			return val[0]
-		}
-		log.Fatal(s, " could not be read. error :")
-		return ""
-	}
-
-	var getInt = func(s string) int {
-		v, err := strconv.Atoi(check(s))
-		if err != nil {
-			log.Println("Error reading User param :", s)
-		}
-		return v
-	}
-
-	concurrent := getInt("concurrent")
-
-	delay := check("delay")
-	host := check("target")
-	port := getInt("port")
-
-	cmd := state.NewSiegeSession{
-		Concurrent: concurrent,
-		Delay:      delay,
-		Host:       host,
-		Port:       port,
-	}
-
-	return state.SessionEvent{
-		Event: cmd,
-	}
+	return val
 }
 
 func writeToState(cmd state.SessionEvent) {
