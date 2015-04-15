@@ -10,8 +10,12 @@ SESSIONS
 ####CREATE
 Create a new Session.   
 ```
-    PUT http://<host>/sessions
-        Payload:  
+    PUT http://<host>/sessions/new
+        Payload:  x-www-form-urlencoded
+                    concurrent=33
+                    target=localhost
+                    port=8888
+                    delay=1
 ```
 
 ####READ
@@ -39,7 +43,7 @@ Start or Stop an existing Session.
 Update an existing Session.
 ```
     PATCH http://<host>/sessions/update/<SessionId>
-        Payload:
+        Payload:  x-www-form-urlencoded
           concurrent=14
           delay=1
           target=localhost
