@@ -79,7 +79,7 @@ func pollState() {
 		notifySessionEventSubs(c)
 
 	default:
-
+		log.Println("ERROR: Unknown event :", c.Event)
 	}
 }
 

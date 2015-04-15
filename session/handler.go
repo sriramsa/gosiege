@@ -22,7 +22,7 @@ var siegeProcs = make([]exec.Cmd, 0)
 func StartSessionHandler(session state.SiegeSession) {
 
 	if jSess, err := json.MarshalIndent(session, "", "\t"); err != nil {
-		log.Println("Starting a new SESSION HANDLER for : ", string(jSess))
+		log.Println("Starting a new session handler for : ", string(jSess))
 	} else {
 		log.Println("Error JSON MarshalIndent :", err)
 	}
@@ -77,8 +77,8 @@ func CalculateMaxRpsAvailable() uint {
 }
 
 func updateSiege(e state.UpdateSiegeSession) {
-	log.Println("Updating Siege - New target : ", e.NewTargetUsers, " Old :", sess.TargetUsers)
-	sess.TargetUsers = e.NewTargetUsers
+	log.Println("Updating Siege - New target : ", e.Concurrent, " Old :", sess.TargetUsers)
+	sess.TargetUsers = e.Concurrent
 
 	startOrUpdateSiege()
 }
@@ -88,6 +88,7 @@ func stopAllSiege() {
 	log.Println("Stopping all Siege processes")
 
 	for i := range siegeProcs {
+
 		cmd := siegeProcs[i]
 		// go
 		func() {

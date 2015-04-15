@@ -9,16 +9,26 @@ package session
 import (
 	"encoding/json"
 	"log"
+	"strconv"
 
 	"github.com/loadcloud/gosiege/common"
 	"github.com/loadcloud/gosiege/state"
 )
 
-type SessionId string
+// Session Id is just int, being incremented.
+var lastSessionId = 100
+
+func nextSessionId() string {
+	lastSessionId++
+	return strconv.Itoa(lastSessionId)
+}
 
 // List of current sessions running indexed on it's SessionId
-var sessList map[SessionId]state.SessionState
+var sessList map[string]state.SessionState
 var sessCmdCh chan state.SessionEvent
+
+// Map of all the sessions
+var sessMap = make(map[string]state.SiegeSession)
 
 // Start the session manager. Will be done in a go routine
 func StartSessionManager() {
@@ -51,7 +61,7 @@ func listenToSessionEvents() {
 func parseEvent(c state.SessionEvent) {
 	switch t := c.Event.(type) {
 	case state.NewSiegeSession:
-		log.Println("NewSiegeSession Command Received", t)
+		log.Println("NewSiegeSession Event Received", t)
 		sessParams, _ := c.Event.(state.NewSiegeSession)
 		sess := createNewSession(sessParams)
 
@@ -59,10 +69,10 @@ func parseEvent(c state.SessionEvent) {
 		startSession(sess)
 
 	case state.StopSiegeSession:
-		log.Println("StopSiegeSession Command Received", t)
+		log.Println("StopSiegeSession Event Received", t)
 		sessParams, _ := c.Event.(state.StopSiegeSession)
 
-		// Send the command to the session handler
+		// Send the Event to the session handler
 		if sess, found := sessMap[sessParams.SessionId]; found {
 			log.Println("Sending event to session handler.")
 			sess.HandlerCh <- c
@@ -72,10 +82,10 @@ func parseEvent(c state.SessionEvent) {
 		//stopSession(c.Cmd.(state.StopSiegeSession))
 
 	case state.UpdateSiegeSession:
-		log.Println("UpdateSiegeSession Command Received", t)
+		log.Println("UpdateSiegeSession Event Received", t)
 		sessParams, _ := c.Event.(state.UpdateSiegeSession)
 
-		// Send the command to the session handler
+		// Send the Event to the session handler
 		if sess, found := sessMap[sessParams.SessionId]; found {
 			log.Println("Sending event to session handler.")
 			sess.HandlerCh <- c
@@ -84,7 +94,7 @@ func parseEvent(c state.SessionEvent) {
 		}
 
 	case state.EndSiegeSession:
-		log.Println("EndSiegeSession Command Received", t)
+		log.Println("EndSiegeSession Event Received", t)
 		endSession(c.Event.(state.EndSiegeSession))
 
 	default:
@@ -92,17 +102,14 @@ func parseEvent(c state.SessionEvent) {
 	}
 }
 
-// Map of all the sessions
-var sessMap = make(map[string]state.SiegeSession)
-
 func createNewSession(c state.NewSiegeSession) state.SiegeSession {
 	marshallOut, _ := json.MarshalIndent(c, "", "\t")
 
-	log.Println("Command : ", marshallOut)
+	log.Println("Event : ", marshallOut)
 
 	sess := state.SiegeSession{
-		SessionId: "1234",
-		Host:      c.Host,
+		SessionId: nextSessionId(),
+		Host:      c.Target,
 		Delay:     c.Delay,
 		Port:      c.Port,
 
@@ -111,8 +118,6 @@ func createNewSession(c state.NewSiegeSession) state.SiegeSession {
 
 		HandlerCh: make(chan state.SessionEvent, 1),
 	}
-
-	log.Print("Session created...")
 
 	sess.SetState(state.Ready)
 	log.Println("New Session Created with sessin id : ", sess.SessionId)

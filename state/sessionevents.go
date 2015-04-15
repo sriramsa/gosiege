@@ -1,4 +1,4 @@
-// A list of administration event
+// A list of session related events
 package state
 
 // Holds a generic event. Used for sending across channels
@@ -7,8 +7,10 @@ type SessionEvent struct {
 }
 
 type NewSiegeSession struct {
-	Concurrent, Port int
-	Delay, Host      string
+	Target     string `schema:"target"`
+	Port       int    `schema:"port"`
+	Concurrent int    `schema:"concurrent"`
+	Delay      string `schema:"delay"`
 }
 
 type EndSiegeSession struct {
@@ -20,6 +22,10 @@ type StopSiegeSession struct {
 }
 
 type UpdateSiegeSession struct {
-	NewTargetUsers         int
-	SessionId, Delay, Host string
+	SessionId string `schema:"Id"`
+
+	Target     string `schema:"target"`
+	Port       int    `schema:"port"`
+	Concurrent int    `schema:"concurrent"`
+	Delay      string `schema:"delay"`
 }

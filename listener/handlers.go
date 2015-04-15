@@ -5,73 +5,65 @@ import (
 	"errors"
 	"log"
 	"net/http"
+	"reflect"
 
 	"github.com/gorilla/mux"
+	"github.com/gorilla/schema"
 	"github.com/loadcloud/gosiege/state"
 )
 
 // Creates a new session
 func newSessHandler(w http.ResponseWriter, r *http.Request) {
-	var concurrent, port int
-	var host, delay string
-	var err error
+	event := new(state.NewSiegeSession)
 
-	err = func() error {
-		if concurrent, err = reqInt(r, "concurrent"); err != nil {
-			return errors.New("Valid concurrent not found.")
+	err := func() error {
+		if err := decodeFormIntoStruct(r, event); err != nil {
+			return err
 		}
 
-		if port, err = reqInt(r, "port"); err != nil {
-			return errors.New("Valid concurrent not found.")
+		// Ensure all values are in the structure
+		if err := validateFields(*event); err != nil {
+			return err
 		}
 		return nil
 	}()
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
+		log.Println("Error : ", err.Error())
 		return
 	}
 
-	event := state.NewSiegeSession{
-		Concurrent: concurrent,
-		Delay:      delay,
-		Host:       host,
-		Port:       port,
-	}
-
-	// Write
-	writeToState(state.SessionEvent{event})
+	writeToState(state.SessionEvent{*event})
 
 	w.WriteHeader(http.StatusOK)
 }
 
 func updateSessHandler(w http.ResponseWriter, r *http.Request) {
-	var concurrent int
-	var err error
+	// Id comes in the URL path
+	event := state.UpdateSiegeSession{
+		SessionId: mux.Vars(r)["Id"],
+	}
 
-	err = func() error {
-		if concurrent, err = reqInt(r, "concurrent"); err != nil {
-			return errors.New("Valid concurrent not found.")
+	err := func() error {
+		if err := decodeFormIntoStruct(r, &event); err != nil {
+			return err
+		}
+
+		// Ensure all values are in the structure
+		if err := validateFields(event); err != nil {
+			return err
 		}
 		return nil
 	}()
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
+		log.Println("Error : ", err.Error())
 		return
 	}
 
-	// Create the event. Id will always be available since
-	// it is part of the routing
-	siegeCmd := state.SessionEvent{
-		Event: state.UpdateSiegeSession{
-			SessionId:      mux.Vars(r)["Id"],
-			NewTargetUsers: concurrent,
-		},
-	}
-
-	// Write
-	writeToState(siegeCmd)
+	writeToState(state.SessionEvent{event})
 
 	w.WriteHeader(http.StatusOK)
 }
@@ -85,29 +77,71 @@ func stopSessHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
+/* Handler Helpers */
+
+// Decode the form values into the event struct passed
+func decodeFormIntoStruct(r *http.Request, e interface{}) error {
+	err := r.ParseForm()
+	if err != nil {
+		return err
+	}
+
+	// Gorilla decoder to decode form into struct
+	decoder := schema.NewDecoder()
+
+	// r.PostForm now has a map of our POST form values
+	if err = decoder.Decode(e, r.PostForm); err != nil {
+		log.Println("Error decoding.")
+		return err
+	}
+
+	return nil
+}
+
+// Verifies that all the structure fields are filled.
+func validateFields(event interface{}) error {
+	s := reflect.ValueOf(event)
+
+	for i := 0; i < s.NumField(); i++ {
+		name := s.Type().Field(i).Name
+		val := s.Field(i).Interface()
+
+		switch val.(type) {
+		case int:
+			if val == 0 {
+				return errors.New(name + " is 0")
+			}
+		case string:
+			if val == "" {
+				return errors.New(name + " is empty.")
+			}
+		default:
+			panic("Verification to be implemented for type in handler.")
+		}
+	}
+	return nil
+}
+
 func stopSession(id string) {
-	// Create the event.
 	siegeCmd := state.SessionEvent{
 		Event: state.StopSiegeSession{id},
 	}
 
-	log.Println("Stopping session : ", id)
+	log.Println("Sending message to stop session : ", id)
 
-	// Write
 	writeToState(siegeCmd)
 }
 
 // Safely handle panic handling the user request
 func safelyDo(f func(http.ResponseWriter, *http.Request)) func(http.ResponseWriter, *http.Request) {
-	wf := func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
 		defer func() {
 			if err := recover(); err != nil {
-				log.Println("Handler panic:", err)
+				log.Println("Handler Panic:", err)
 				http.Error(w, "Error Processing Request", http.StatusBadRequest)
 			}
 		}()
 
 		f(w, r)
 	}
-	return wf
 }

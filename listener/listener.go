@@ -73,6 +73,7 @@ func reqInt(r *http.Request, s string) (val int, err error) {
 }
 
 func writeToState(cmd state.SessionEvent) {
+	log.Println("sending cmd : ", cmd)
 	// this is temp
 	tempWriteCh <- cmd
 }
