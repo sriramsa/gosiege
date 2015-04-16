@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"log"
 	"os/exec"
+	"time"
 
 	"github.com/loadcloud/gosiege/state"
 )
@@ -16,13 +17,24 @@ import (
 // Current Siege Session being managed by this handler
 var sess state.SiegeSession
 
-// List of processes running siege instances
+type siegeProcInfo struct {
+	Concurrent int
+	Proc       exec.Cmd
+}
+
+type sessionRuntimeState struct {
+	StartTime time.Time       // When was it started
+	EndTime   time.Time       // When it should end
+	Procs     []siegeProcInfo // Process list and info
+}
+
+// List of processes running siege instances. Indexed by session id
 var siegeProcs = make([]exec.Cmd, 0)
 
 func StartSessionHandler(session state.SiegeSession) {
 
 	if jSess, err := json.MarshalIndent(session, "", "\t"); err != nil {
-		log.Println("Starting a new session handler for : ", string(jSess))
+		log.Println("Starting a new session handler for session : ", string(jSess))
 	} else {
 		log.Println("Error JSON MarshalIndent :", err)
 	}
