@@ -42,7 +42,7 @@ func regSessionRoutes(r *mux.Router) {
 		Handler(handlers.CombinedLoggingHandler(os.Stdout, RouteHandler{safelyDo(stopSessHandler)}))
 
 	sr.Path("/update/{Id:[0-9]+}").
-		Methods("GET", "PATCH").
+		Methods("GET", "PATCH", "PUT").
 		Handler(handlers.CombinedLoggingHandler(os.Stdout, RouteHandler{safelyDo(updateSessHandler)}))
 }
 

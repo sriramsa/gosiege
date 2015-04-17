@@ -21,6 +21,7 @@ func newSessHandler(w http.ResponseWriter, r *http.Request) {
 			return err
 		}
 
+		log.Println("event : ", event)
 		// Ensure all values are in the structure
 		if err := validateFields(*event); err != nil {
 			return err
@@ -41,17 +42,17 @@ func newSessHandler(w http.ResponseWriter, r *http.Request) {
 
 func updateSessHandler(w http.ResponseWriter, r *http.Request) {
 	// Id comes in the URL path
-	event := state.UpdateSiegeSession{
-		SessionId: mux.Vars(r)["Id"],
-	}
+	event := new(state.UpdateSiegeSession)
 
 	err := func() error {
-		if err := decodeFormIntoStruct(r, &event); err != nil {
+		if err := decodeFormIntoStruct(r, event); err != nil {
 			return err
 		}
 
+		event.SessionId = mux.Vars(r)["Id"]
+		log.Println("event : ", *event)
 		// Ensure all values are in the structure
-		if err := validateFields(event); err != nil {
+		if err := validateFields(*event); err != nil {
 			return err
 		}
 		return nil
@@ -63,7 +64,7 @@ func updateSessHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeToState(state.SessionEvent{event})
+	writeToState(state.SessionEvent{*event})
 
 	w.WriteHeader(http.StatusOK)
 }
@@ -89,6 +90,7 @@ func decodeFormIntoStruct(r *http.Request, e interface{}) error {
 	// Gorilla decoder to decode form into struct
 	decoder := schema.NewDecoder()
 
+	log.Println("r.PostForm :", r.PostForm)
 	// r.PostForm now has a map of our POST form values
 	if err = decoder.Decode(e, r.PostForm); err != nil {
 		log.Println("Error decoding.")

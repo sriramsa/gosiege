@@ -39,7 +39,7 @@ type SessionHandler struct {
 //var siegeProcs = make([]exec.Cmd, 0)
 
 // Create a new SessionHandler and return it
-func NewSessionHandler(state state.SiegeSession, listen chan state.SessionEvent) SessionHandler {
+func NewSessionHandler(state state.SiegeSession, listen chan state.SessionEvent) *SessionHandler {
 	h := SessionHandler{
 		State:     state,
 		StartTime: time.Now(),
@@ -49,7 +49,7 @@ func NewSessionHandler(state state.SiegeSession, listen chan state.SessionEvent)
 		ListenCh: listen,
 	}
 
-	return h
+	return &h
 }
 
 func (h *SessionHandler) Start() {
@@ -141,7 +141,7 @@ func (h *SessionHandler) handleCommand(e state.SessionEvent) {
 	switch e.Event.(type) {
 	case state.UpdateSiegeSession:
 		log.Println("Update Siege Session")
-		h.updateSiege(e.Event.(state.UpdateSiegeSession))
+		//h.updateSiege(e.Event.(state.UpdateSiegeSession))
 
 	case state.StopSiegeSession:
 		log.Println("Stop Siege Session received")
@@ -153,7 +153,7 @@ func CalculateMaxRpsAvailable() uint {
 	return 1000
 }
 
-func (h *SessionHandler) updateSiege(e state.UpdateSiegeSession) {
+func (h *SessionHandler) Update(e state.UpdateSiegeSession) {
 	log.Println("Updating Siege - New target : ", e.Concurrent, " Old :", h.State.TargetUsers)
 	h.State.TargetUsers = e.Concurrent
 

@@ -28,7 +28,7 @@ var sessList map[string]state.SessionState
 var sessCmdCh chan state.SessionEvent
 
 // List of session handlers
-var handlerList map[string]SessionHandler = make(map[string]SessionHandler, 0)
+var handlerList map[string]*SessionHandler = make(map[string]*SessionHandler, 0)
 
 // Map of all the sessions
 //var sessMap = make(map[string]state.SiegeSession)
@@ -79,12 +79,10 @@ func handleEvent(c state.SessionEvent) {
 		// Send the Event to the session handler
 		if h, found := handlerList[sessParams.SessionId]; found {
 			log.Println("Sending event to session handler.")
-			//h.ListenCh <- c
 			h.Stop()
 		} else {
 			log.Println("Session not found Id : ", sessParams.SessionId)
 		}
-		//stopSession(c.Cmd.(state.StopSiegeSession))
 
 	case state.UpdateSiegeSession:
 		log.Println("UpdateSiegeSession Event Received", t)
@@ -93,7 +91,7 @@ func handleEvent(c state.SessionEvent) {
 		// Send the Event to the session handler
 		if h, found := handlerList[sessParams.SessionId]; found {
 			log.Println("Sending event to session handler.")
-			h.ListenCh <- c
+			h.Update(sessParams)
 		} else {
 			log.Println("Session not found Id : ", sessParams.SessionId)
 		}
