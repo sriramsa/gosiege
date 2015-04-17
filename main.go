@@ -92,9 +92,10 @@ func main() {
 func shutdown() {
 	listener.ShutdownRESTApiListener()
 
+	close(common.DoneCh)
+
 	// Wait for all the sessions to get kill signal.
 	// TODO: Use a channel to signal end
 	time.Sleep(time.Second * 2)
 
-	close(common.DoneCh)
 }

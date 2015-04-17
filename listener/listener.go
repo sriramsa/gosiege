@@ -50,7 +50,7 @@ func StartHttpCommandListener(writeCh chan state.SessionEvent) {
 }
 
 func ShutdownRESTApiListener() {
-	stopSession("1234")
+	//stopAllSessions()
 }
 
 func reqString(r *http.Request, s string) (val string, err error) {

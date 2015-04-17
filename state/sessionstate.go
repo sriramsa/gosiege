@@ -1,8 +1,6 @@
 // Session state
 package state
 
-import "log"
-
 type sessionState int
 
 const (
@@ -26,7 +24,7 @@ type SiegeSession struct {
 	TargetUsers int // Target users for the run
 	ActiveUsers int // Active users
 
-	HandlerCh chan SessionEvent
+	//HandlerCh chan SessionEvent
 
 	state sessionState
 }
@@ -38,14 +36,4 @@ func (s SiegeSession) GetState() sessionState {
 func (s SiegeSession) SetState(st sessionState) error {
 	s.state = st
 	return nil
-}
-
-func (s SiegeSession) Start() int {
-	log.Print("Started")
-	return -1
-}
-
-func (s SiegeSession) Stop() int {
-	log.Print("Stopped")
-	return -1
 }

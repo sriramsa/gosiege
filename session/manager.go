@@ -27,8 +27,11 @@ func nextSessionId() string {
 var sessList map[string]state.SessionState
 var sessCmdCh chan state.SessionEvent
 
+// List of session handlers
+var handlerList map[string]SessionHandler = make(map[string]SessionHandler, 0)
+
 // Map of all the sessions
-var sessMap = make(map[string]state.SiegeSession)
+//var sessMap = make(map[string]state.SiegeSession)
 
 // Start the session manager. Will be done in a go routine
 func StartSessionManager() {
@@ -50,32 +53,34 @@ func listenToSessionEvents() {
 		select {
 		case cmd = <-sessCmdCh:
 			log.Println("Event received from watcher.")
-			parseEvent(cmd)
+			handleEvent(cmd)
 		case <-common.DoneCh:
-			log.Println("DONE signal received, exiting SessionManager")
+			log.Println("EXIT signal received, exiting SessionManager")
 			return
 		}
 	}
 }
 
-func parseEvent(c state.SessionEvent) {
+func handleEvent(c state.SessionEvent) {
+
 	switch t := c.Event.(type) {
 	case state.NewSiegeSession:
 		log.Println("NewSiegeSession Event Received", t)
 		sessParams, _ := c.Event.(state.NewSiegeSession)
-		sess := createNewSession(sessParams)
+		s := createNewSession(sessParams)
 
 		// Start the session immediately
-		startSession(sess)
+		startSession(s)
 
 	case state.StopSiegeSession:
 		log.Println("StopSiegeSession Event Received", t)
 		sessParams, _ := c.Event.(state.StopSiegeSession)
 
 		// Send the Event to the session handler
-		if sess, found := sessMap[sessParams.SessionId]; found {
+		if h, found := handlerList[sessParams.SessionId]; found {
 			log.Println("Sending event to session handler.")
-			sess.HandlerCh <- c
+			//h.ListenCh <- c
+			h.Stop()
 		} else {
 			log.Println("Session not found Id : ", sessParams.SessionId)
 		}
@@ -86,9 +91,9 @@ func parseEvent(c state.SessionEvent) {
 		sessParams, _ := c.Event.(state.UpdateSiegeSession)
 
 		// Send the Event to the session handler
-		if sess, found := sessMap[sessParams.SessionId]; found {
+		if h, found := handlerList[sessParams.SessionId]; found {
 			log.Println("Sending event to session handler.")
-			sess.HandlerCh <- c
+			h.ListenCh <- c
 		} else {
 			log.Println("Session not found Id : ", sessParams.SessionId)
 		}
@@ -107,7 +112,16 @@ func createNewSession(c state.NewSiegeSession) state.SiegeSession {
 
 	log.Println("Event : ", marshallOut)
 
-	sess := state.SiegeSession{
+	//if _, found := handlerList[c.SessionId]; found {
+	//log.Println("Cannot Create - Session already found: ", c.SessionId)
+	//return handlerList[c.SessionId].State
+	//}
+
+	handlerCh := make(chan state.SessionEvent, 1)
+
+	// Create a new state for the session
+	// TODO: Move this into the creation of session handler
+	s := state.SiegeSession{
 		SessionId: nextSessionId(),
 		Host:      c.Target,
 		Delay:     c.Delay,
@@ -116,25 +130,26 @@ func createNewSession(c state.NewSiegeSession) state.SiegeSession {
 		TargetUsers: c.Concurrent,
 		ActiveUsers: 0,
 
-		HandlerCh: make(chan state.SessionEvent, 1),
+		//HandlerCh: handlerCh,
 	}
 
-	sess.SetState(state.Ready)
-	log.Println("New Session Created with sessin id : ", sess.SessionId)
-	return sess
+	handlerList[s.SessionId] = NewSessionHandler(s, handlerCh)
+
+	s.SetState(state.Ready)
+	log.Println("New Session Created with sessin id : ", s.SessionId)
+	return s
 }
 
-func startSession(sess state.SiegeSession) {
-
-	if _, found := sessMap[sess.SessionId]; found {
-		log.Println("Session already found: ", sess.SessionId)
-		return
-	}
-
-	sessMap[sess.SessionId] = sess
+func startSession(s state.SiegeSession) {
+	h := handlerList[s.SessionId]
 
 	// spin up the session instance handler
-	go StartSessionHandler(sess)
+	go h.Start()
+
+	//sessMap[sess.SessionId] = sess
+
+	// spin up the session instance handler
+	//go StartSessionHandler(sess)
 }
 
 func endSession(c state.EndSiegeSession) {
