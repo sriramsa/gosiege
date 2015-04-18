@@ -80,7 +80,13 @@ func main() {
 	log.Println("StartHttpCommandListener Done")
 
 	// Wait for a keystroke to exit.
-	fmt.Scanln()
+	// TODO:
+	runningFromCmdline := false
+	if runningFromCmdline {
+		fmt.Scanln()
+	} else {
+		<-common.DoneCh // will wait forever
+	}
 
 	shutdown()
 

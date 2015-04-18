@@ -108,7 +108,7 @@ func handleEvent(c state.SessionEvent) {
 func createNewSession(c state.NewSiegeSession) state.SiegeSession {
 	marshallOut, _ := json.MarshalIndent(c, "", "\t")
 
-	log.Println("Event : ", marshallOut)
+	log.Println("Event : ", string(marshallOut))
 
 	//if _, found := handlerList[c.SessionId]; found {
 	//log.Println("Cannot Create - Session already found: ", c.SessionId)
