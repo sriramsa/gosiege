@@ -72,6 +72,7 @@ func updateSessHandler(w http.ResponseWriter, r *http.Request) {
 func stopSessHandler(w http.ResponseWriter, r *http.Request) {
 	// Id will always be available since it is part of the routing
 	id := mux.Vars(r)["Id"]
+	log.Println("Stop Sess Handler : ", id)
 
 	stopSession(id)
 

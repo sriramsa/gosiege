@@ -4,12 +4,11 @@ package main
 import (
 	"log"
 	"net/http"
-	"net/http/httptest"
-	"net/url"
-	"regexp"
-	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
+
+	"github.com/loadcloud/gosiege/test"
 )
 
 // Starts the main server to test
@@ -26,57 +25,86 @@ func stat_handler(w http.ResponseWriter, r *http.Request) {
 func TestCreatingASession(t *testing.T) {
 	log.Println("TEST: Creating a Session")
 
-	// Start a test http server to listen
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log.Println("HIT HIT HIT HIT")
-	}))
-	defer ts.Close()
-	log.Println("Startng a test http server to recieve hits at : ", ts.URL)
+	var hitCounter uint32 = 0
+	checkHit := true
+	hitRecd := make(chan struct{})
+	noHitRecd := make(chan struct{})
+	var verifyHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Increment hit counter
+		atomic.AddUint32(&hitCounter, 1)
+		if hitCounter == 10 && checkHit {
+			log.Println("More than 10 hits received...")
+			close(hitRecd)
+			// No need to check hits now. Now check for no hits
+			checkHit = false
 
-	// Get port number
-	re := regexp.MustCompile(`.*:(.*)$`)
-	match := re.FindStringSubmatch(ts.URL)
-	port := match[1]
+			// Spin up a timer to set the counter to 0 every second
+			// and verify that no hits were obtained for a second
+			var tr *time.Timer
+			tr = time.AfterFunc(time.Second*1, func() {
+				if hitCounter == 0 {
+					close(noHitRecd)
+				} else {
+					atomic.StoreUint32(&hitCounter, 0)
+					tr.Reset(time.Second * 1)
+				}
+			})
+		}
+	})
+
+	ts, port := test.StartTestServer(verifyHandler)
+	defer ts.Close()
+	log.Println("Started a test http server to recieve hits : ", ts.URL)
 
 	// Start the main go siege server
 	log.Println("Starting the Go Siege Server in a separate routine.")
 	startServer()
 	// TODO: Fix waiting
-	time.Sleep(time.Second * 2)
+	time.Sleep(time.Second * 1)
 
 	// Create a session on the server
 	log.Println("Sending command to create a session on the server.")
 
-	form := url.Values{}
-	form.Add("concurrent", "7")
-	form.Add("target", "localhost")
-	form.Add("port", port)
-	form.Add("delay", "1")
-	req, err := http.NewRequest("PUT", "http://localhost:8090/gosiege/sessions/new", strings.NewReader(form.Encode()))
-	if err != nil {
-		t.Error("Creating Request failed with error : ", err)
+	req := test.NewSessionReq{
+		Url:        ts.URL,
+		Target:     "localhost",
+		Port:       port,
+		Concurrent: "11",
+		Delay:      "1",
 	}
-	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-	req.Header.Add("Cache-Control", "no-cache")
 
-	client := &http.Client{}
-	resp, err := client.Do(req)
+	resp, err := req.Send()
 	if err != nil {
 		t.Error("Request failed with error : ", err)
 	}
 
 	log.Println("Server response : ", resp)
 
-	// Ensure we are getting hits for 5 secs
-	log.Println("TBD: Checking if we are getting hits from the server for 5 seconds")
+	// Wait till we get some hits
+	log.Println("Waiting for hits on test server.")
+	<-hitRecd
 
 	// Stop the Server
-	log.Println("TBD: Stopping the session.")
+	log.Println("Stopping the session.")
+	sr := test.StopSessionReq{
+		SessionId: "101",
+	}
+
+	resp, err = sr.Send()
+	if err != nil {
+		t.Error("Stop Session request failed with error : ", err)
+	}
+	log.Println("Server response : ", resp)
 
 	// Ensure we are not getting any hits
-	log.Println("TBD: Verifying that the hits have stopped.")
+	log.Println("Verifying that the hits have stopped.")
+	select {
+	case <-noHitRecd:
+		log.Println("Verified no hits.")
+	case <-time.After(time.Second * 3):
+		t.Error("Hits didn't stop for 3 seconds after sending stop.")
+	}
 
-	time.Sleep(time.Second * 3)
 	//t.Error("Creating a session failed.")
 	// Wait for a keystroke to exit.
 }

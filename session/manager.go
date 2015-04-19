@@ -12,8 +12,16 @@ import (
 	"strconv"
 
 	"github.com/loadcloud/gosiege/common"
+	"github.com/loadcloud/gosiege/instrument"
 	"github.com/loadcloud/gosiege/state"
 )
+
+// Event Writer for instrumentation
+var event *instrument.EventWriter
+
+func init() {
+	event = instrument.NewEventWriter("session", nil, true)
+}
 
 // Session Id is just int, being incremented.
 var lastSessionId = 100
@@ -37,6 +45,7 @@ var handlerList map[string]*SessionHandler = make(map[string]*SessionHandler, 0)
 func StartSessionManager() {
 
 	log.Println("Subscribing to Session events with watcher")
+	event.Info("Subscribing to Session events with watcher")
 
 	// Subscribe to the StateWatcher for Session Events
 	sessCmdCh = state.SubscribeToSessionEvents()
@@ -62,6 +71,8 @@ func listenToSessionEvents() {
 }
 
 func handleEvent(c state.SessionEvent) {
+
+	event.Info("Event Received.", c)
 
 	switch t := c.Event.(type) {
 	case state.NewSiegeSession:

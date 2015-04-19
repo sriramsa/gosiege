@@ -4,6 +4,8 @@ package config
 import (
 	"fmt"
 	"log"
+
+	"github.com/loadcloud/gosiege/instrument"
 )
 
 // local variable with configuration loaded
@@ -53,8 +55,11 @@ func KeyValueStoreOption() string {
 	return cfg.DistributedStateProvider
 }
 
+var event *instrument.EventWriter
+
 // Gets the config from the environment and returns the same
 func LoadConfig() error {
+	event = instrument.NewEventWriter("config", nil, true)
 	cfg = loadConfig()
 
 	if err := validateConfig(); err != nil {
@@ -79,5 +84,6 @@ func loadConfig() (config *ClusterConfig) {
 	}
 
 	log.Println("Config loaded :", config)
+	event.Info("Configuration Loaded : ", config)
 	return config
 }

@@ -30,10 +30,14 @@ import (
 	"github.com/loadcloud/gosiege/cluster"
 	"github.com/loadcloud/gosiege/common"
 	"github.com/loadcloud/gosiege/config"
+	"github.com/loadcloud/gosiege/instrument"
 	"github.com/loadcloud/gosiege/listener"
 	"github.com/loadcloud/gosiege/session"
 	"github.com/loadcloud/gosiege/state"
 )
+
+// Event Writer for instrumentation
+var event *instrument.EventWriter
 
 func main() {
 	// If there is a panic recover using this function
@@ -43,14 +47,18 @@ func main() {
 		}
 	}()
 
+	event = instrument.NewEventWriter("main", nil, true)
+
 	// Initialize common resources used across the components
 	// logger, channels etc.,
 	_ = common.InitResources()
 	log.Println("Resources Initialized")
+	event.Info("Resources Initialized")
 
 	// Load the configuration
 	_ = config.LoadConfig()
 	log.Println("Configuration loaded")
+	event.Info("Configuration loaded")
 
 	// Initialize Distributed State Engine
 	// This also starts a go routine that watches changes and informs
@@ -79,6 +87,7 @@ func main() {
 	go listener.StartHttpCommandListener(tempWatcherListenChan)
 	log.Println("StartHttpCommandListener Done")
 
+	log.Println("SIGNAL:<Started>")
 	// Wait for a keystroke to exit.
 	// TODO:
 	runningFromCmdline := false

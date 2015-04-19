@@ -1,5 +1,5 @@
 // Package test provides test package for testing gosiege
-package main
+package test
 
 import (
 	"log"
