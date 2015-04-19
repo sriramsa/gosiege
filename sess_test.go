@@ -1,4 +1,4 @@
-// Test a session
+// Test a session.
 package main
 
 import (
@@ -22,7 +22,7 @@ func stat_handler(w http.ResponseWriter, r *http.Request) {
 
 // Verifies that a session is created and it sends requests.
 //
-func TestCreatingASession(t *testing.T) {
+func TestCreateAndStopASession(t *testing.T) {
 	log.Println("TEST: Creating a Session")
 
 	var hitCounter uint32 = 0
@@ -104,7 +104,4 @@ func TestCreatingASession(t *testing.T) {
 	case <-time.After(time.Second * 3):
 		t.Error("Hits didn't stop for 3 seconds after sending stop.")
 	}
-
-	//t.Error("Creating a session failed.")
-	// Wait for a keystroke to exit.
 }
