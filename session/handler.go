@@ -5,7 +5,6 @@
 package session
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
 	"os/exec"
@@ -54,11 +53,7 @@ func NewSessionHandler(state state.SiegeSession, listen chan state.SessionEvent)
 
 func (h *SessionHandler) Start() {
 
-	if jSess, err := json.MarshalIndent(h, "", "\t"); err != nil {
-		log.Println("Starting a new session handler for session : ", string(jSess))
-	} else {
-		log.Println("Error JSON MarshalIndent :", err)
-	}
+	event.Info("Starting Session Handler", h)
 
 	// Start the protocol
 
@@ -138,6 +133,7 @@ func StartSessionHandler(session state.SiegeSession) {
 */
 func (h *SessionHandler) handleCommand(e state.SessionEvent) {
 
+	event.Info("Handler: Event Received", e)
 	switch e.Event.(type) {
 	case state.UpdateSiegeSession:
 		log.Println("Update Siege Session")
@@ -177,8 +173,6 @@ func (h *SessionHandler) Stop() {
 				log.Println("...killed")
 			}
 		}()
-		//marshallOut, err = json.MarshalIndent(cmd, "after :", "\t")
-		//log.Println(string(marshallOut))
 
 	}
 	// FIX with sync
@@ -205,10 +199,6 @@ func (h *SessionHandler) startOrUpdateSiege() {
 
 	// Create the slice to hold these procs
 	//siegeProcs = make([]exec.Cmd, numSigeProcs)
-
-	//marshallOut, _ := json.MarshalIndent(cmd, "", "\t")
-
-	//log.Println("Cmd : ", string(marshallOut))
 }
 
 // Spins up one siege per usersPerSiege
@@ -241,15 +231,11 @@ func (h *SessionHandler) spinUpSiege(usersPerSiege int) {
 		h.State.ActiveUsers += users
 
 		h.addProc(users, *cmd)
-		log.Println("Added : ", len(h.Procs))
 		log.Println("Siege process created - PID : ", cmd.Process.Pid, " ", userParam)
+		event.Info("New Siege Proc", cmd)
 	}
 
-	if jSess, err := json.MarshalIndent(h.State, "", "\t"); err == nil {
-		log.Println("Current session : ", string(jSess))
-	} else {
-		log.Println("Error JSON MarshalIndent :", err.Error())
-	}
+	event.Info("Session information", h.State)
 }
 
 func (h *SessionHandler) addProc(u int, cmd exec.Cmd) {

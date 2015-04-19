@@ -101,7 +101,7 @@ func main() {
 
 	// Closing a channel returns zero value immediately to all waiters.
 	// Each goroutine has this wait in their select. This will make them exit.
-	log.Println("==================== END ====================")
+	event.Info("Shutting down")
 }
 
 func shutdown() {
@@ -111,6 +111,6 @@ func shutdown() {
 
 	// Wait for all the sessions to get kill signal.
 	// TODO: Use a channel to signal end
-	time.Sleep(time.Second * 2)
+	time.Sleep(time.Second * 1)
 
 }

@@ -12,7 +12,7 @@ import (
 type EventType int
 
 const (
-	Info EventType = 1 + iota
+	Info EventType = 0 + iota
 	Warning
 	Error
 )
