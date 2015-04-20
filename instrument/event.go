@@ -1,13 +1,11 @@
 // Package instrumentation
+// Lets one generate events within code and provides Attach/Detach
+// functions to attach to or detatch from the event stream.
+// Will be used for testing too with tests attaching to each
+// package stream
 package instrument
 
-import (
-	"encoding/json"
-	"io"
-	"log"
-	"os"
-	"time"
-)
+import "time"
 
 type EventType int
 
@@ -15,6 +13,7 @@ const (
 	Info EventType = 0 + iota
 	Warning
 	Error
+	Metric
 )
 
 func (i EventType) String() string {
@@ -22,70 +21,22 @@ func (i EventType) String() string {
 		"INFO",
 		"WARNING",
 		"ERROR",
+		"METRIC",
 	}
 
 	return s[i]
 }
 
 type EventBody struct {
-	Message    string      `json:"Msg,omitempty"`
-	JSONObject interface{} `json:"Obj,omitempty"`
+	Message string      `json:"Msg,omitempty"`
+	Object  interface{} `json:"Obj,omitempty"`
 }
 
 type Event struct {
 	Type    string    `json:"Type,omitempty"`
+	Package string    `json:"Package,omitempty"`
 	Time    time.Time `json:"Time,omitempty"`
 	Node    string    `json:"Node,omitempty"`
-	Package string    `json:"Package,omitempty"`
 
 	Body EventBody `json:"Body,omitempty"`
-}
-
-type EventWriter struct {
-	l      *log.Logger
-	pkg    string
-	node   string
-	pretty bool
-}
-
-func (w *EventWriter) Info(msg string, v ...interface{}) {
-
-	e := Event{
-		// TODO: Format time properly
-		Time:    time.Now(),
-		Package: w.pkg,
-		Type:    Info.String(),
-		Node:    w.node,
-		Body: EventBody{
-			Message:    msg,
-			JSONObject: v,
-		},
-	}
-
-	var js []byte
-	var err error
-	if w.pretty {
-		js, err = json.MarshalIndent(e, "", "\t")
-	} else {
-		js, err = json.Marshal(e)
-	}
-	if err != nil {
-		log.Println("Error JSON Marshal: ", err)
-	} else {
-		w.l.Println("EVENT : ", string(js))
-	}
-}
-
-// Create a new logger with the prefix given
-func NewEventWriter(p string, w io.Writer, pr bool) *EventWriter {
-	h, err := os.Hostname()
-	if err != nil {
-		log.Println("error getting hostname : ", err)
-	}
-	return &EventWriter{
-		l:      log.New(os.Stdout, "", log.Ltime),
-		pkg:    p,
-		node:   h,
-		pretty: pr,
-	}
 }

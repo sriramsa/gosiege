@@ -4,10 +4,12 @@ package main
 import (
 	"log"
 	"net/http"
+	"os"
 	"sync/atomic"
 	"testing"
 	"time"
 
+	"github.com/loadcloud/gosiege/session"
 	"github.com/loadcloud/gosiege/test"
 )
 
@@ -62,6 +64,9 @@ func TestCreateAndStopASession(t *testing.T) {
 	// TODO: Fix waiting
 	time.Sleep(time.Second * 1)
 
+	// Attach stdout to session event stream
+	session.EventHydrantAttach(os.Stdout)
+	//session.EventHydrantAttach(os.Stderr)
 	// Create a session on the server
 	log.Println("Sending command to create a session on the server.")
 

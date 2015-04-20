@@ -8,6 +8,7 @@ package session
 
 import (
 	"encoding/json"
+	"io"
 	"log"
 	"strconv"
 
@@ -19,8 +20,34 @@ import (
 // Event Writer for instrumentation
 var event *instrument.EventWriter
 
+var mw, newMw io.Writer
+var pr *io.PipeReader
+var pw *io.PipeWriter
+
+func EventHydrantAttach(w io.Writer) {
+	event.Attach(w)
+	// Add to the existing multi writer
+	//newMw = io.MultiWriter(mw, w)
+
+}
+
 func init() {
-	event = instrument.NewEventWriter("session", nil, true)
+	//w := io.Writer(os.Stdout)
+	//mw = io.MultiWriter(w)
+
+	//pr, pw = io.Pipe()
+	//go func() {
+	//scanner := bufio.NewScanner(pr)
+	//for scanner.Scan() {
+	//fmt.Fprintln(mw, "AAATTTTTTT", scanner.Text())
+	//if mw != newMw {
+	//mw = newMw
+	//}
+	//mw.Write(scanner.Bytes())
+	//}
+	//}()
+
+	event = instrument.NewEventWriter("session", nil, false)
 }
 
 // Session Id is just int, being incremented.
@@ -117,9 +144,7 @@ func handleEvent(c state.SessionEvent) {
 }
 
 func createNewSession(c state.NewSiegeSession) state.SiegeSession {
-	marshallOut, _ := json.MarshalIndent(c, "", "\t")
-
-	log.Println("Event : ", string(marshallOut))
+	event.Info("Create New Session : ", c)
 
 	//if _, found := handlerList[c.SessionId]; found {
 	//log.Println("Cannot Create - Session already found: ", c.SessionId)

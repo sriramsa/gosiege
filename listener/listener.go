@@ -7,13 +7,12 @@
 package listener
 
 import (
-	"errors"
 	"log"
 	"net/http"
-	"strconv"
 
 	"github.com/loadcloud/gosiege/common"
 	"github.com/loadcloud/gosiege/config"
+	"github.com/loadcloud/gosiege/instrument"
 	"github.com/loadcloud/gosiege/state"
 )
 
@@ -21,11 +20,18 @@ var urlPrefix string
 
 var tempWriteCh chan state.SessionEvent
 
+var emit *instrument.EventWriter
+
+func init() {
+	emit = instrument.NewEventWriter("listener", nil, true)
+}
+
 // Starts a http listener and reports incoming messages to the caller
-func StartHttpCommandListener(writeCh chan state.SessionEvent) {
+func StartRESTApiListener(writeCh chan state.SessionEvent) {
 	defer func() {
 		if err := recover(); err != nil {
 			log.Println("FATAL : Listener failed", err)
+			emit.Error("Listener start failed", err)
 		}
 
 		// Let everybody exit since we can't listen for incoming commands
@@ -38,38 +44,19 @@ func StartHttpCommandListener(writeCh chan state.SessionEvent) {
 
 	regApiRoutes()
 
-	log.Println("Listening on port : ", port)
+	emit.Info("Listening on port : ", port)
 
 	//server := http.Server{ Addr: addr, //ErrorLog:, TODO }
 	if err := http.ListenAndServe(":"+port, nil); err != nil {
-		log.Fatal("Could not listen on port : ", port, err)
+		emit.Error("Could not listen on port, Exitting :", port, err)
 
 		// Let everybody exit since we can't listen for incoming commands
 		close(common.DoneCh)
 	}
 }
 
-func ShutdownRESTApiListener() {
+func ShutdownRESTApi() {
 	//stopAllSessions()
-}
-
-func reqString(r *http.Request, s string) (val string, err error) {
-	if val = r.FormValue(s); val == "" {
-		err = errors.New(s + " could not be read. error :")
-	}
-
-	return val, err
-}
-
-func reqInt(r *http.Request, s string) (val int, err error) {
-	var sv string
-	if sv, err = reqString(r, s); err != nil {
-		return 0, err
-	}
-
-	val, err = strconv.Atoi(sv)
-
-	return val, err
 }
 
 func writeToState(cmd state.SessionEvent) {

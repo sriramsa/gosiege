@@ -6,11 +6,17 @@ package cluster
 
 import (
 	"log"
-	"time"
 
 	"github.com/loadcloud/gosiege/common"
+	"github.com/loadcloud/gosiege/instrument"
 	"github.com/loadcloud/gosiege/state"
 )
+
+var emit *instrument.EventWriter
+
+func init() {
+	emit = instrument.NewEventWriter("cluster", nil, true)
+}
 
 // StartClusterManager starts the siege cluster manager. Takes a
 // channel for listening to abort signals
@@ -23,7 +29,8 @@ func StartClusterManager() {
 		}
 	}()
 
-	log.Println("Starting ClusterManager")
+	//log.Println("Starting ClusterManager")
+	emit.Info("Starting ClusterManager")
 
 	// Subscribe to the State Watcher for Cluster Administration Events
 	log.Println("Requesting Subscription from GoSiegeState Watcher")
@@ -41,13 +48,10 @@ func listenToIncomingEvents(listen chan state.ClusterEvent) {
 		log.Println("Listening for Incoming events.")
 
 		select {
-		case <-time.After(24 * time.Hour):
-			// closing release all listeners of doneCh
-			close(common.DoneCh)
 		case cmd = <-listen:
 			parseEvent(cmd)
 		case <-common.DoneCh:
-			log.Println("DONE signal received, exiting ClusterManager")
+			emit.Info("DONE signal received, exiting ClusterManager")
 			return
 		}
 

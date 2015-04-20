@@ -24,6 +24,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"log"
 	"time"
 
@@ -39,32 +40,40 @@ import (
 // Event Writer for instrumentation
 var event *instrument.EventWriter
 
+var mw io.Writer
+
+func Attach(w io.Writer) {
+	// Add to the existing multi writer
+	mw = io.MultiWriter(w)
+}
+
 func main() {
 	// If there is a panic recover using this function
 	defer func() {
 		if err := recover(); err != nil {
-			log.Println("MAIN: Failed : ", err)
+			event.Error("MAIN: Failed : ", err)
 		}
 	}()
 
-	event = instrument.NewEventWriter("main", nil, true)
+	//event = instrument.NewEventWriter("main", nil, true)
+	event = instrument.NewEventWriter("main", mw, true)
 
 	// Initialize common resources used across the components
 	// logger, channels etc.,
 	_ = common.InitResources()
-	log.Println("Resources Initialized")
+	//log.Println("Resources Initialized")
 	event.Info("Resources Initialized")
 
 	// Load the configuration
 	_ = config.LoadConfig()
-	log.Println("Configuration loaded")
+	//log.Println("Configuration loaded")
 	event.Info("Configuration loaded")
 
 	// Initialize Distributed State Engine
 	// This also starts a go routine that watches changes and informs
 	// the corresponding component of the change
 	_ = state.InitGoSiegeState()
-	log.Println("InitGoSiegeState Done")
+	event.Info("InitGoSiegeState Done")
 
 	// Temp channel for sending cmds from listener to watcher
 	var tempWatcherListenChan chan state.SessionEvent
@@ -73,19 +82,19 @@ func main() {
 	// Start the State Watcher. This watches for state changes and accepts subscriptions
 	// from other components
 	go state.StartStateWatcher(tempWatcherListenChan)
-	log.Println("StartStateWatcher Done")
+	event.Info("StartStateWatcher Done")
 
 	// Start the cluster manager go routine.
 	go cluster.StartClusterManager()
-	log.Println("StartClusterManager Done")
+	event.Info("StartClusterManager Done")
 
 	// Start session manager
 	go session.StartSessionManager()
-	log.Println("StartSessionManager Done")
+	event.Info("StartSessionManager Done")
 
 	// Start the http listener that listens to commands from Admin Web UI and gosiege cli
-	go listener.StartHttpCommandListener(tempWatcherListenChan)
-	log.Println("StartHttpCommandListener Done")
+	go listener.StartRESTApiListener(tempWatcherListenChan)
+	event.Info("StartHttpCommandListener Done")
 
 	log.Println("SIGNAL:<Started>")
 	// Wait for a keystroke to exit.
@@ -105,7 +114,7 @@ func main() {
 }
 
 func shutdown() {
-	listener.ShutdownRESTApiListener()
+	listener.ShutdownRESTApi()
 
 	close(common.DoneCh)
 
