@@ -24,7 +24,6 @@ package main
 
 import (
 	"fmt"
-	"io"
 	"log"
 	"time"
 
@@ -38,42 +37,60 @@ import (
 )
 
 // Event Writer for instrumentation
-var event *instrument.EventWriter
+var emit *instrument.EventWriter
 
-var mw io.Writer
+func EventHydrantAttach() *instrument.Attach {
+	if emit == nil {
+		// Race condition with main just started and somebody trying to
+		// attach to the event stream
+		emit = instrument.NewEventWriter("main", nil, true)
+	}
+	//return emit.Attach()
+	return nil
+}
 
-func Attach(w io.Writer) {
-	// Add to the existing multi writer
-	mw = io.MultiWriter(w)
+func GetEventHydrant() *instrument.EventWriter {
+	if emit == nil {
+		// Race condition with main just started and somebody trying to
+		// attach to the event stream
+		emit = instrument.NewEventWriter("main", nil, true)
+	}
+	return emit
 }
 
 func main() {
 	// If there is a panic recover using this function
 	defer func() {
 		if err := recover(); err != nil {
-			event.Error("MAIN: Failed : ", err)
+			if emit != nil {
+				emit.Error("MAIN: Failed : ", err)
+			} else {
+				log.Println("ERROR - MAIN : Panic : ", err)
+			}
 		}
 	}()
 
 	//event = instrument.NewEventWriter("main", nil, true)
-	event = instrument.NewEventWriter("main", mw, true)
+	if emit == nil {
+		emit = instrument.NewEventWriter("main", nil, true)
+	}
 
 	// Initialize common resources used across the components
 	// logger, channels etc.,
 	_ = common.InitResources()
 	//log.Println("Resources Initialized")
-	event.Info("Resources Initialized")
+	emit.Info("Resources Initialized")
 
 	// Load the configuration
 	_ = config.LoadConfig()
 	//log.Println("Configuration loaded")
-	event.Info("Configuration loaded")
+	emit.Info("Configuration loaded")
 
 	// Initialize Distributed State Engine
 	// This also starts a go routine that watches changes and informs
 	// the corresponding component of the change
 	_ = state.InitGoSiegeState()
-	event.Info("InitGoSiegeState Done")
+	emit.Info("InitGoSiegeState Done")
 
 	// Temp channel for sending cmds from listener to watcher
 	var tempWatcherListenChan chan state.SessionEvent
@@ -82,21 +99,22 @@ func main() {
 	// Start the State Watcher. This watches for state changes and accepts subscriptions
 	// from other components
 	go state.StartStateWatcher(tempWatcherListenChan)
-	event.Info("StartStateWatcher Done")
+	emit.Info("StartStateWatcher Done")
 
 	// Start the cluster manager go routine.
 	go cluster.StartClusterManager()
-	event.Info("StartClusterManager Done")
+	emit.Info("StartClusterManager Done")
 
 	// Start session manager
 	go session.StartSessionManager()
-	event.Info("StartSessionManager Done")
+	emit.Info("StartSessionManager Done")
 
 	// Start the http listener that listens to commands from Admin Web UI and gosiege cli
 	go listener.StartRESTApiListener(tempWatcherListenChan)
-	event.Info("StartHttpCommandListener Done")
+	emit.Info("StartHttpCommandListener Done")
 
-	log.Println("SIGNAL:<Started>")
+	emit.Info("ServerInitDone")
+
 	// Wait for a keystroke to exit.
 	// TODO:
 	runningFromCmdline := false
@@ -110,7 +128,7 @@ func main() {
 
 	// Closing a channel returns zero value immediately to all waiters.
 	// Each goroutine has this wait in their select. This will make them exit.
-	event.Info("Shutting down")
+	emit.Info("Shutting down")
 }
 
 func shutdown() {

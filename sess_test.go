@@ -4,12 +4,11 @@ package main
 import (
 	"log"
 	"net/http"
-	"os"
 	"sync/atomic"
 	"testing"
 	"time"
 
-	"github.com/loadcloud/gosiege/session"
+	"github.com/loadcloud/gosiege/instrument"
 	"github.com/loadcloud/gosiege/test"
 )
 
@@ -25,7 +24,7 @@ func stat_handler(w http.ResponseWriter, r *http.Request) {
 // Verifies that a session is created and it sends requests.
 //
 func TestCreateAndStopASession(t *testing.T) {
-	log.Println("TEST: Creating a Session")
+	t.Log("TEST: Creating a Session")
 
 	var hitCounter uint32 = 0
 	checkHit := true
@@ -35,7 +34,7 @@ func TestCreateAndStopASession(t *testing.T) {
 		// Increment hit counter
 		atomic.AddUint32(&hitCounter, 1)
 		if hitCounter == 10 && checkHit {
-			log.Println("More than 10 hits received...")
+			t.Log("More than 10 hits received...")
 			close(hitRecd)
 			// No need to check hits now. Now check for no hits
 			checkHit = false
@@ -56,19 +55,29 @@ func TestCreateAndStopASession(t *testing.T) {
 
 	ts, port := test.StartTestServer(verifyHandler)
 	defer ts.Close()
-	log.Println("Started a test http server to recieve hits : ", ts.URL)
+	t.Log("Started a test http server to recieve hits : ", ts.URL)
 
 	// Start the main go siege server
-	log.Println("Starting the Go Siege Server in a separate routine.")
+	t.Log("Starting the Go Siege Server in a separate routine.")
 	startServer()
-	// TODO: Fix waiting
+
+	// Attach to the event stream and wait for ServerInitDone event
+	mainEvents := instrument.NewAttach(GetEventHydrant())
+	jsonObj, e := mainEvents.WaitForEvent(instrument.Info, "ServerInitDone", time.Second*1)
+	if e != nil {
+		t.Error("Could not get event: ", e)
+	} else {
+		t.Log("JSON: ", jsonObj)
+	}
+
+	// Got to detach for now since log write is synchronous and blocks if
+	// nobody is listening on it.
+	mainEvents.Detach()
+
 	time.Sleep(time.Second * 1)
 
-	// Attach stdout to session event stream
-	session.EventHydrantAttach(os.Stdout)
-	//session.EventHydrantAttach(os.Stderr)
 	// Create a session on the server
-	log.Println("Sending command to create a session on the server.")
+	t.Log("Sending command to create a session on the server.")
 
 	req := test.NewSessionReq{
 		Url:        ts.URL,
@@ -83,14 +92,14 @@ func TestCreateAndStopASession(t *testing.T) {
 		t.Error("Request failed with error : ", err)
 	}
 
-	log.Println("Server response : ", resp)
+	t.Log("Server response : ", resp)
 
 	// Wait till we get some hits
-	log.Println("Waiting for hits on test server.")
+	t.Log("Waiting for hits on test server.")
 	<-hitRecd
 
 	// Stop the Server
-	log.Println("Stopping the session.")
+	t.Log("Stopping the session.")
 	sr := test.StopSessionReq{
 		SessionId: "101",
 	}
@@ -99,14 +108,15 @@ func TestCreateAndStopASession(t *testing.T) {
 	if err != nil {
 		t.Error("Stop Session request failed with error : ", err)
 	}
-	log.Println("Server response : ", resp)
+	t.Log("Server response : ", resp)
 
 	// Ensure we are not getting any hits
-	log.Println("Verifying that the hits have stopped.")
+	t.Log("Verifying that the hits have stopped.")
 	select {
 	case <-noHitRecd:
-		log.Println("Verified no hits.")
+		t.Log("Verified no hits.")
 	case <-time.After(time.Second * 3):
 		t.Error("Hits didn't stop for 3 seconds after sending stop.")
 	}
+	time.Sleep(time.Second * 2)
 }

@@ -24,11 +24,9 @@ var mw, newMw io.Writer
 var pr *io.PipeReader
 var pw *io.PipeWriter
 
-func EventHydrantAttach(w io.Writer) {
-	event.Attach(w)
-	// Add to the existing multi writer
-	//newMw = io.MultiWriter(mw, w)
-
+func EventHydrantAttach(w io.Writer) *instrument.Attach {
+	return nil
+	//return event.Attach()
 }
 
 func init() {
@@ -99,7 +97,7 @@ func listenToSessionEvents() {
 
 func handleEvent(c state.SessionEvent) {
 
-	event.Info("Event Received.", c)
+	event.Info("Event Received.", c.Event)
 
 	switch t := c.Event.(type) {
 	case state.NewSiegeSession:

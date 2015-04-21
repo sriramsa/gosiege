@@ -58,12 +58,12 @@ func (h *SessionHandler) Start() {
 	// Start the protocol
 
 	// Get current capability
-	maxRps := CalculateMaxRpsAvailable()
+	//maxRps := CalculateMaxRpsAvailable()
 
-	log.Println("Max RPS : ", maxRps)
-	log.Println("host : ", h.State.Host)
-	log.Println("concurrent : ", h.State.TargetUsers)
-	log.Println("delay : ", h.State.Delay)
+	//log.Println("Max RPS : ", maxRps)
+	//log.Println("host : ", h.State.Host)
+	//log.Println("concurrent : ", h.State.TargetUsers)
+	//log.Println("delay : ", h.State.Delay)
 
 	h.startOrUpdateSiege()
 	// Lock the session in the data store
@@ -158,8 +158,7 @@ func (h *SessionHandler) Update(e state.UpdateSiegeSession) {
 
 // Stop all siege processes in this session
 func (h *SessionHandler) Stop() {
-	log.Println("Stopping all Siege processes : ", h.State.SessionId)
-	log.Println("Number of processes : ", len(h.Procs))
+	log.Println("Stopping ", len(h.Procs), " Siege processes : ", h.State.SessionId)
 
 	for i := range h.Procs {
 		cmd := h.Procs[i].Proc
@@ -244,7 +243,5 @@ func (h *SessionHandler) addProc(u int, cmd exec.Cmd) {
 		Proc:       cmd,
 	}
 
-	log.Println("Adding Process :", len(h.Procs))
 	h.Procs = append(h.Procs, p)
-	log.Println("Added : ", len(h.Procs))
 }

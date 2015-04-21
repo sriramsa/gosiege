@@ -11,20 +11,18 @@ type EventType int
 
 const (
 	Info EventType = 0 + iota
+	Metric
 	Warning
 	Error
-	Metric
 )
 
 func (i EventType) String() string {
-	s := [...]string{
+	return [...]string{
 		"INFO",
+		"METRIC",
 		"WARNING",
 		"ERROR",
-		"METRIC",
-	}
-
-	return s[i]
+	}[i]
 }
 
 type EventBody struct {
