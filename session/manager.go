@@ -13,18 +13,18 @@ import (
 	"strconv"
 
 	"github.com/loadcloud/gosiege/common"
-	"github.com/loadcloud/gosiege/instrument"
 	"github.com/loadcloud/gosiege/state"
+	"github.com/loadcloud/gosiege/testrument"
 )
 
 // Event Writer for instrumentation
-var event *instrument.EventWriter
+var event *testrument.EventWriter
 
 var mw, newMw io.Writer
 var pr *io.PipeReader
 var pw *io.PipeWriter
 
-func EventHydrantAttach(w io.Writer) *instrument.Attach {
+func EventHydrantAttach(w io.Writer) *testrument.Attach {
 	return nil
 	//return event.Attach()
 }
@@ -45,7 +45,7 @@ func init() {
 	//}
 	//}()
 
-	event = instrument.NewEventWriter("session", nil, false)
+	event = testrument.NewEventWriter("session", nil, false)
 }
 
 // Session Id is just int, being incremented.

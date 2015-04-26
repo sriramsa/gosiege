@@ -8,14 +8,13 @@ import (
 	"log"
 
 	"github.com/loadcloud/gosiege/common"
-	"github.com/loadcloud/gosiege/instrument"
 	"github.com/loadcloud/gosiege/state"
 )
 
-var emit *instrument.EventWriter
+var emit *testrument.EventWriter
 
 func init() {
-	emit = instrument.NewEventWriter("cluster", nil, true)
+	emit = testrument.NewEventWriter("cluster", nil, true)
 }
 
 // StartClusterManager starts the siege cluster manager. Takes a

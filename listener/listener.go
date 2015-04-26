@@ -12,7 +12,6 @@ import (
 
 	"github.com/loadcloud/gosiege/common"
 	"github.com/loadcloud/gosiege/config"
-	"github.com/loadcloud/gosiege/instrument"
 	"github.com/loadcloud/gosiege/state"
 )
 
@@ -20,10 +19,10 @@ var urlPrefix string
 
 var tempWriteCh chan state.SessionEvent
 
-var emit *instrument.EventWriter
+var emit *testrument.EventWriter
 
 func init() {
-	emit = instrument.NewEventWriter("listener", nil, true)
+	emit = testrument.NewEventWriter("listener", nil, true)
 }
 
 // Starts a http listener and reports incoming messages to the caller
