@@ -33,27 +33,17 @@ import (
 	"github.com/loadcloud/gosiege/listener"
 	"github.com/loadcloud/gosiege/session"
 	"github.com/loadcloud/gosiege/state"
-	//"github.com/sriramsa/testrument"
+	"github.com/sriramsa/testrument"
 )
 
 // Event Writer for instrumentation
-var emit *testrument.EventWriter
+var emit *testrument.EventStream
 
-func EventHydrantAttach() *testrument.Attach {
+func GetEventHydrant() *testrument.EventStream {
 	if emit == nil {
 		// Race condition with main just started and somebody trying to
 		// attach to the event stream
-		emit = testrument.NewEventWriter("main", nil, true)
-	}
-	//return emit.Attach()
-	return nil
-}
-
-func GetEventHydrant() *testrument.EventWriter {
-	if emit == nil {
-		// Race condition with main just started and somebody trying to
-		// attach to the event stream
-		emit = testrument.NewEventWriter("main", nil, true)
+		emit = testrument.NewEventStream("main", true)
 	}
 	return emit
 }
@@ -70,9 +60,8 @@ func main() {
 		}
 	}()
 
-	//event = testrument.NewEventWriter("main", nil, true)
 	if emit == nil {
-		emit = testrument.NewEventWriter("main", nil, true)
+		emit = testrument.NewEventStream("main", true)
 	}
 
 	// Initialize common resources used across the components

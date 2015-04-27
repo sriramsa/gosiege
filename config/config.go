@@ -4,6 +4,8 @@ package config
 import (
 	"fmt"
 	"log"
+
+	"github.com/sriramsa/testrument"
 )
 
 // local variable with configuration loaded
@@ -53,11 +55,11 @@ func KeyValueStoreOption() string {
 	return cfg.DistributedStateProvider
 }
 
-var event *testrument.EventWriter
+var event *testrument.EventStream
 
 // Gets the config from the environment and returns the same
 func LoadConfig() error {
-	event = testrument.NewEventWriter("config", nil, true)
+	event = testrument.NewEventStream("config", true)
 	cfg = loadConfig()
 
 	if err := validateConfig(); err != nil {

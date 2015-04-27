@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/loadcloud/gosiege/test"
+	"github.com/sriramsa/testrument"
 )
 
 // Starts the main server to test
@@ -62,7 +63,7 @@ func TestCreateAndStopASession(t *testing.T) {
 
 	// Attach to the event stream and wait for ServerInitDone event
 	mainEvents := testrument.NewAttach(GetEventHydrant())
-	jsonObj, e := mainEvents.WaitForEvent(testrument.Info, "ServerInitDone", time.Second*1)
+	jsonObj, e := mainEvents.WaitFor(testrument.Info, "ServerInitDone", time.Second*1)
 	if e != nil {
 		t.Error("Could not get event: ", e)
 	} else {

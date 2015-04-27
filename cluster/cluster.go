@@ -9,12 +9,13 @@ import (
 
 	"github.com/loadcloud/gosiege/common"
 	"github.com/loadcloud/gosiege/state"
+	"github.com/sriramsa/testrument"
 )
 
-var emit *testrument.EventWriter
+var emit *testrument.EventStream
 
 func init() {
-	emit = testrument.NewEventWriter("cluster", nil, true)
+	emit = testrument.NewEventStream("cluster", true)
 }
 
 // StartClusterManager starts the siege cluster manager. Takes a

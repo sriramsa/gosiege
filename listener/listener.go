@@ -13,16 +13,17 @@ import (
 	"github.com/loadcloud/gosiege/common"
 	"github.com/loadcloud/gosiege/config"
 	"github.com/loadcloud/gosiege/state"
+	"github.com/sriramsa/testrument"
 )
 
 var urlPrefix string
 
 var tempWriteCh chan state.SessionEvent
 
-var emit *testrument.EventWriter
+var emit *testrument.EventStream
 
 func init() {
-	emit = testrument.NewEventWriter("listener", nil, true)
+	emit = testrument.NewEventStream("listener", true)
 }
 
 // Starts a http listener and reports incoming messages to the caller
